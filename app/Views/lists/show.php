@@ -54,6 +54,8 @@ if (!$list): ?>
                 <?php if ($it['description']): ?>
                   <p><?= nl2br(htmlspecialchars($it['description'], ENT_QUOTES, 'UTF-8')) ?></p>
                 <?php endif; ?>
+
+                <!-- Rating block -->
                 <div class="mt-3">
                   <div class="rating"
                        data-item-id="<?= (int)$it['id'] ?>"
@@ -70,8 +72,27 @@ if (!$list): ?>
                     · <span class="count" data-item="<?= (int)$it['id'] ?>"><?= (int)$it['count'] ?></span> Bewertungen
                   </div>
                 </div>
-              </div>
-            </div>
+
+                <!-- Comment toggle + field (optional) -->
+                <div class="mt-3">
+                  <a href="#!" class="comment-toggle" data-target="<?= (int)$it['id'] ?>">
+                    <i class="material-icons left">chat</i>Kommentar hinzufügen/ändern (optional)
+                  </a>
+                  <div class="comment-block" id="comment-<?= (int)$it['id'] ?>" style="display:none;">
+                    <div class="input-field" style="margin-top:16px;">
+                      <textarea class="materialize-textarea comment-input" maxlength="2000" data-item="<?= (int)$it['id'] ?>"></textarea>
+                      <label>Kommentar (max. 2000 Zeichen)</label>
+                    </div>
+                    <div class="right-align">
+                      <button type="button" class="btn-flat clear-comment" data-item="<?= (int)$it['id'] ?>">
+                        Leeren
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div> <!-- /card-content -->
+            </div> <!-- /card -->
           </div>
         <?php endforeach; ?>
       </div>
@@ -90,23 +111,67 @@ if (!$list): ?>
         });
       }
 
+      // Toggle comment block visibility
+      document.querySelectorAll('.comment-toggle').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const id = link.getAttribute('data-target');
+          const block = document.getElementById('comment-' + id);
+          if (!block) return;
+          const isHidden = getComputedStyle(block).display === 'none';
+          block.style.display = isHidden ? 'block' : 'none';
+          if (isHidden) {
+            // Ensure Materialize label floats correctly and textarea resizes
+            if (window.M && M.updateTextFields) M.updateTextFields();
+            const ta = block.querySelector('textarea.materialize-textarea');
+            if (ta && window.M && M.textareaAutoResize) M.textareaAutoResize(ta);
+          }
+        });
+      });
+
+      // Clear comment button
+      document.querySelectorAll('.clear-comment').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-item');
+          const ta = document.querySelector('.comment-input[data-item="' + id + '"]');
+          if (ta) {
+            ta.value = '';
+            if (window.M && M.updateTextFields) M.updateTextFields();
+            if (window.M && M.toast) M.toast({html: 'Kommentar geleert.'});
+          }
+        });
+      });
+
+      // Bind rating stars
       document.querySelectorAll('.rating').forEach(container => {
         const my = parseInt(container.dataset.myScore || '0', 10);
         if (my > 0) fillStars(container, my);
 
         container.querySelectorAll('.star-btn').forEach(btn => {
           btn.addEventListener('click', async () => {
-            if (!isLogged) { M.toast({html: 'Bitte zuerst anmelden.'}); return; }
+            if (!isLogged) { if (window.M && M.toast) M.toast({html: 'Bitte zuerst anmelden.'}); return; }
+
             const score = parseInt(btn.dataset.score, 10);
             const itemId = parseInt(container.dataset.itemId, 10);
             const csrf = container.dataset.csrf;
+
+            // Read optional comment (if the block exists)
+            const ta = document.querySelector('.comment-input[data-item="' + itemId + '"]');
+            const rawComment = ta ? (ta.value || '').trim() : '';
+            const comment = rawComment.length > 0 ? rawComment : null;
+
+            if (comment && comment.length > 2000) {
+              if (window.M && M.toast) M.toast({html: 'Kommentar zu lang (max. 2000 Zeichen).'});
+              return;
+            }
 
             try{
               const res = await fetch(`${base}/items/${itemId}/rate`, {
                 method: 'POST',
                 headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({score, csrf})
+                body: JSON.stringify({score, csrf, comment})
               });
+
               const data = await res.json();
               if (!data.ok) { throw new Error(data.message || 'Fehler'); }
 
@@ -116,9 +181,13 @@ if (!$list): ?>
               const cnt = document.querySelector(`.count[data-item="${itemId}"]`);
               if (avg) avg.textContent = (Number(data.avg)).toFixed(2).replace('.', ',');
               if (cnt) cnt.textContent = String(data.count);
-              M.toast({html: data.message});
+
+              // Optionally clear comment after successful submit
+              if (ta) { ta.value = ''; if (window.M && M.updateTextFields) M.updateTextFields(); }
+
+              if (window.M && M.toast) M.toast({html: data.message});
             } catch(e){
-              M.toast({html: e.message});
+              if (window.M && M.toast) M.toast({html: e.message});
             }
           });
         });
