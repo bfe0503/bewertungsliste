@@ -95,9 +95,9 @@ if (!$list): ?>
 
                 <!-- Latest comments list -->
                 <?php $cl = $commentsByItem[$it['id']] ?? []; if (!empty($cl)): ?>
-                  <div class="mt-3">
+                  <div class="mt-3 comments-wrap" data-item="<?= (int)$it['id'] ?>">
                     <span class="grey-text text-darken-1">Letzte Kommentare:</span>
-                    <ul class="collection" style="border:none;">
+                    <ul class="collection comments-list" style="border:none;">
                       <?php foreach ($cl as $c): ?>
                         <li class="collection-item" style="border:0;border-bottom:1px solid rgba(0,0,0,.06);">
                           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -120,6 +120,12 @@ if (!$list): ?>
                       <?php endforeach; ?>
                     </ul>
                   </div>
+                <?php else: ?>
+                  <!-- Create a placeholder wrapper so JS can inject comments without reload -->
+                  <div class="mt-3 comments-wrap" data-item="<?= (int)$it['id'] ?>" style="display:none;">
+                    <span class="grey-text text-darken-1">Letzte Kommentare:</span>
+                    <ul class="collection comments-list" style="border:none;"></ul>
+                  </div>
                 <?php endif; ?>
 
               </div> <!-- /card-content -->
@@ -140,6 +146,93 @@ if (!$list): ?>
         icons.forEach((ic, idx) => {
           ic.textContent = (idx + 1) <= score ? 'star' : 'star_border';
         });
+      }
+
+      // Format date as dd.mm.yyyy HH:MM
+      function formatDate(d){
+        const pad = (n)=> String(n).padStart(2,'0');
+        return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+
+      // Create one comment <li>
+      function createCommentLi(user, score, comment, created) {
+        const li = document.createElement('li');
+        li.className = 'collection-item';
+        li.style.border = '0';
+        li.style.borderBottom = '1px solid rgba(0,0,0,.06)';
+
+        const top = document.createElement('div');
+        top.style.display = 'flex';
+        top.style.justifyContent = 'space-between';
+        top.style.alignItems = 'center';
+        top.style.gap = '8px';
+        top.style.flexWrap = 'wrap';
+
+        const strong = document.createElement('strong');
+        strong.textContent = user;
+        top.appendChild(strong);
+
+        const stars = document.createElement('span');
+        stars.className = 'grey-text';
+        for (let s=1; s<=5; s++){
+          const i = document.createElement('i');
+          i.className = 'material-icons';
+          i.style.fontSize = '18px';
+          i.style.verticalAlign = 'middle';
+          i.textContent = s <= score ? 'star' : 'star_border';
+          stars.appendChild(i);
+        }
+        top.appendChild(stars);
+
+        const body = document.createElement('div');
+        body.style.marginTop = '6px';
+        body.textContent = comment;
+
+        const meta = document.createElement('div');
+        meta.className = 'grey-text';
+        meta.style.marginTop = '4px';
+        meta.style.fontSize = '.9rem';
+        meta.textContent = created;
+
+        li.appendChild(top);
+        li.appendChild(body);
+        li.appendChild(meta);
+        return li;
+      }
+
+      // Inject freshly submitted comment into the list (no reload)
+      function injectComment(itemId, score, comment) {
+        if (!comment) return;
+
+        const wrap = document.querySelector('.comments-wrap[data-item="'+itemId+'"]');
+        if (!wrap) return;
+
+        // Ensure wrapper is visible (it is hidden if initially empty)
+        if (getComputedStyle(wrap).display === 'none') {
+          wrap.style.display = 'block';
+        }
+
+        let ul = wrap.querySelector('.comments-list');
+        if (!ul) {
+          ul = document.createElement('ul');
+          ul.className = 'collection comments-list';
+          ul.style.border = 'none';
+          wrap.appendChild(ul);
+        }
+
+        // Prefer to show "Du" as author (we do not expose user name in JS)
+        const user = 'Du';
+        const created = formatDate(new Date());
+        const li = createCommentLi(user, score, comment, created);
+
+        // Prepend new comment
+        if (ul.firstChild) ul.insertBefore(li, ul.firstChild);
+        else ul.appendChild(li);
+
+        // Keep at most 3 items
+        while (ul.childElementCount > 3) {
+          ul.removeChild(ul.lastElementChild);
+        }
       }
 
       // Toggle comment block visibility
@@ -204,16 +297,22 @@ if (!$list): ?>
               const data = await res.json();
               if (!data.ok) { throw new Error(data.message || 'Fehler'); }
 
+              // Update stars + stats
               fillStars(container, score);
               const avg = document.querySelector(`.avg[data-item="${itemId}"]`);
               const cnt = document.querySelector(`.count[data-item="${itemId}"]`);
               if (avg) avg.textContent = (Number(data.avg)).toFixed(2).replace('.', ',');
               if (cnt) cnt.textContent = String(data.count);
 
+              // Instant comment injection (no reload)
+              if (comment) {
+                injectComment(itemId, score, comment);
+              }
+
+              // Clear textarea after submit
               if (ta) { ta.value = ''; if (window.M && M.updateTextFields) M.updateTextFields(); }
 
               if (window.M && M.toast) M.toast({html: data.message});
-              // Note: comments list is static for now (updated on page reload)
             } catch(e){
               if (window.M && M.toast) M.toast({html: e.message});
             }
