@@ -52,9 +52,25 @@ if (!$list): ?>
           <div class="col s12 m6">
             <div class="card">
               <div class="card-content">
-                <span class="card-title"><?= htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                  <span class="card-title" style="margin:0;">
+                    <?= htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') ?>
+                  </span>
+
+                  <!-- Meine Bewertung Badge (wird live aktualisiert) -->
+                  <span
+                    class="chip my-score-badge"
+                    data-item="<?= (int)$it['id'] ?>"
+                    style="<?= $it['my_score'] === null ? 'display:none;' : '' ?>"
+                    aria-live="polite"
+                  >
+                    <i class="material-icons" style="vertical-align:middle;margin-right:4px;">star</i>
+                    Deine Bewertung: <strong style="margin-left:4px;"><?= $it['my_score'] !== null ? (int)$it['my_score'] : '' ?></strong>
+                  </span>
+                </div>
+
                 <?php if ($it['description']): ?>
-                  <p><?= nl2br(htmlspecialchars($it['description'], ENT_QUOTES, 'UTF-8')) ?></p>
+                  <p style="margin-top:8px;"><?= nl2br(htmlspecialchars($it['description'], ENT_QUOTES, 'UTF-8')) ?></p>
                 <?php endif; ?>
 
                 <!-- Rating block -->
@@ -121,7 +137,7 @@ if (!$list): ?>
                     </ul>
                   </div>
                 <?php else: ?>
-                  <!-- Create a placeholder wrapper so JS can inject comments without reload -->
+                  <!-- Placeholder wrapper so JS can inject comments without reload -->
                   <div class="mt-3 comments-wrap" data-item="<?= (int)$it['id'] ?>" style="display:none;">
                     <span class="grey-text text-darken-1">Letzte Kommentare:</span>
                     <ul class="collection comments-list" style="border:none;"></ul>
@@ -154,7 +170,6 @@ if (!$list): ?>
         return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
       }
 
-      // Create one comment <li>
       function createCommentLi(user, score, comment, created) {
         const li = document.createElement('li');
         li.className = 'collection-item';
@@ -200,14 +215,12 @@ if (!$list): ?>
         return li;
       }
 
-      // Inject freshly submitted comment into the list (no reload)
       function injectComment(itemId, score, comment) {
         if (!comment) return;
 
         const wrap = document.querySelector('.comments-wrap[data-item="'+itemId+'"]');
         if (!wrap) return;
 
-        // Ensure wrapper is visible (it is hidden if initially empty)
         if (getComputedStyle(wrap).display === 'none') {
           wrap.style.display = 'block';
         }
@@ -220,16 +233,13 @@ if (!$list): ?>
           wrap.appendChild(ul);
         }
 
-        // Prefer to show "Du" as author (we do not expose user name in JS)
         const user = 'Du';
         const created = formatDate(new Date());
         const li = createCommentLi(user, score, comment, created);
 
-        // Prepend new comment
         if (ul.firstChild) ul.insertBefore(li, ul.firstChild);
         else ul.appendChild(li);
 
-        // Keep at most 3 items
         while (ul.childElementCount > 3) {
           ul.removeChild(ul.lastElementChild);
         }
@@ -304,7 +314,15 @@ if (!$list): ?>
               if (avg) avg.textContent = (Number(data.avg)).toFixed(2).replace('.', ',');
               if (cnt) cnt.textContent = String(data.count);
 
-              // Instant comment injection (no reload)
+              // Update "Deine Bewertung" badge
+              const badge = document.querySelector('.my-score-badge[data-item="'+itemId+'"]');
+              if (badge) {
+                badge.style.display = 'inline-flex';
+                const strong = badge.querySelector('strong');
+                if (strong) strong.textContent = String(score);
+              }
+
+              // Live add new comment
               if (comment) {
                 injectComment(itemId, score, comment);
               }
