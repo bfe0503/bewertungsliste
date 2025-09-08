@@ -1,13 +1,21 @@
-# Enable URL rewriting
-RewriteEngine On
+# Enable rewriting
+<IfModule mod_rewrite.c>
+  RewriteEngine On
 
-# If the app lives in a subfolder (e.g., /bewertung/public), you can set a base if needed:
-# RewriteBase /bewertung/public/
+  # If the requested file or directory exists, serve it directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
 
-# Serve existing files/directories directly
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
+  # Otherwise route everything to index.php (front controller)
+  RewriteRule ^ index.php [L]
+</IfModule>
 
-# Route everything else to index.php
-RewriteRule ^ index.php [L]
+# Extra safety: block access to hidden files and sensitive paths
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
+<FilesMatch "^(config\.php|\.env)$">
+  Require all denied
+</FilesMatch>
