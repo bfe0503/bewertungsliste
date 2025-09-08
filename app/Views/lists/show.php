@@ -57,7 +57,6 @@ if (!$list): ?>
                     <?= htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') ?>
                   </span>
 
-                  <!-- Meine Bewertung Badge (wird live aktualisiert) -->
                   <span
                     class="chip my-score-badge"
                     data-item="<?= (int)$it['id'] ?>"
@@ -137,7 +136,6 @@ if (!$list): ?>
                     </ul>
                   </div>
                 <?php else: ?>
-                  <!-- Placeholder wrapper so JS can inject comments without reload -->
                   <div class="mt-3 comments-wrap" data-item="<?= (int)$it['id'] ?>" style="display:none;">
                     <span class="grey-text text-darken-1">Letzte Kommentare:</span>
                     <ul class="collection comments-list" style="border:none;"></ul>
@@ -164,7 +162,6 @@ if (!$list): ?>
         });
       }
 
-      // Format date as dd.mm.yyyy HH:MM
       function formatDate(d){
         const pad = (n)=> String(n).padStart(2,'0');
         return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -313,6 +310,11 @@ if (!$list): ?>
               const cnt = document.querySelector(`.count[data-item="${itemId}"]`);
               if (avg) avg.textContent = (Number(data.avg)).toFixed(2).replace('.', ',');
               if (cnt) cnt.textContent = String(data.count);
+
+              // Update reusable CSRF token returned by server (prevents 403 on next click)
+              if (data.next_csrf) {
+                container.dataset.csrf = data.next_csrf;
+              }
 
               // Update "Deine Bewertung" badge
               const badge = document.querySelector('.my-score-badge[data-item="'+itemId+'"]');

@@ -117,13 +117,17 @@ final class ItemController
         Rating::upsert($itemId, (int)Auth::id(), $score, $comment);
         $stats = Rating::stats($itemId);
 
+        // Issue a fresh CSRF token so the client can rate again without reload.
+        $nextCsrf = Csrf::token('rate_' . $itemId);
+
         echo json_encode([
-            'ok'      => true,
-            'itemId'  => $itemId,
-            'score'   => $score,
-            'avg'     => $stats['avg'],
-            'count'   => $stats['count'],
-            'message' => 'Bewertung gespeichert.',
+            'ok'        => true,
+            'itemId'    => $itemId,
+            'score'     => $score,
+            'avg'       => $stats['avg'],
+            'count'     => $stats['count'],
+            'message'   => 'Bewertung gespeichert.',
+            'next_csrf' => $nextCsrf,
         ]);
     }
 
