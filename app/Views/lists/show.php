@@ -5,6 +5,8 @@
 /** @var bool $canAdd */
 /** @var string $createItemToken */
 /** @var array<int,string> $rateTokens */
+/** @var array<int, array<int, array{user:string,score:int,comment:string,created_at:string}>> $commentsByItem */
+
 if (!$list): ?>
   <div class="section">
     <h5>Liste nicht verfügbar</h5>
@@ -91,6 +93,35 @@ if (!$list): ?>
                   </div>
                 </div>
 
+                <!-- Latest comments list -->
+                <?php $cl = $commentsByItem[$it['id']] ?? []; if (!empty($cl)): ?>
+                  <div class="mt-3">
+                    <span class="grey-text text-darken-1">Letzte Kommentare:</span>
+                    <ul class="collection" style="border:none;">
+                      <?php foreach ($cl as $c): ?>
+                        <li class="collection-item" style="border:0;border-bottom:1px solid rgba(0,0,0,.06);">
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <strong><?= htmlspecialchars($c['user'], ENT_QUOTES, 'UTF-8') ?></strong>
+                            <span class="grey-text">
+                              <?php for ($s=1; $s<=5; $s++): ?>
+                                <i class="material-icons" style="font-size:18px;vertical-align:middle;">
+                                  <?= ($c['score'] >= $s) ? 'star' : 'star_border' ?>
+                                </i>
+                              <?php endfor; ?>
+                            </span>
+                          </div>
+                          <div style="margin-top:6px;">
+                            <?= nl2br(htmlspecialchars($c['comment'], ENT_QUOTES, 'UTF-8')) ?>
+                          </div>
+                          <div class="grey-text" style="margin-top:4px;font-size:.9rem;">
+                            <?= htmlspecialchars(date('d.m.Y H:i', strtotime($c['created_at'])), ENT_QUOTES, 'UTF-8') ?>
+                          </div>
+                        </li>
+                      <?php endforeach; ?>
+                    </ul>
+                  </div>
+                <?php endif; ?>
+
               </div> <!-- /card-content -->
             </div> <!-- /card -->
           </div>
@@ -121,7 +152,6 @@ if (!$list): ?>
           const isHidden = getComputedStyle(block).display === 'none';
           block.style.display = isHidden ? 'block' : 'none';
           if (isHidden) {
-            // Ensure Materialize label floats correctly and textarea resizes
             if (window.M && M.updateTextFields) M.updateTextFields();
             const ta = block.querySelector('textarea.materialize-textarea');
             if (ta && window.M && M.textareaAutoResize) M.textareaAutoResize(ta);
@@ -155,7 +185,6 @@ if (!$list): ?>
             const itemId = parseInt(container.dataset.itemId, 10);
             const csrf = container.dataset.csrf;
 
-            // Read optional comment (if the block exists)
             const ta = document.querySelector('.comment-input[data-item="' + itemId + '"]');
             const rawComment = ta ? (ta.value || '').trim() : '';
             const comment = rawComment.length > 0 ? rawComment : null;
@@ -175,17 +204,16 @@ if (!$list): ?>
               const data = await res.json();
               if (!data.ok) { throw new Error(data.message || 'Fehler'); }
 
-              // Update stars + stats
               fillStars(container, score);
               const avg = document.querySelector(`.avg[data-item="${itemId}"]`);
               const cnt = document.querySelector(`.count[data-item="${itemId}"]`);
               if (avg) avg.textContent = (Number(data.avg)).toFixed(2).replace('.', ',');
               if (cnt) cnt.textContent = String(data.count);
 
-              // Optionally clear comment after successful submit
               if (ta) { ta.value = ''; if (window.M && M.updateTextFields) M.updateTextFields(); }
 
               if (window.M && M.toast) M.toast({html: data.message});
+              // Note: comments list is static for now (updated on page reload)
             } catch(e){
               if (window.M && M.toast) M.toast({html: e.message});
             }

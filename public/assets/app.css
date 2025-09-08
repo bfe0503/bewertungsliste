@@ -1,129 +1,161 @@
-/* Monochrome Materialize theme – mobile-first */
-/* ---------- Color system (light) ---------- */
-:root{
-  --bg: #f5f5f5;          /* page background */
-  --surface: #eeeeee;     /* cards, hero */
-  --surface-2: #e0e0e0;   /* subtle accents */
-  --text: #212121;        /* primary text */
-  --muted: #616161;       /* secondary text */
-  --brand: #424242;       /* nav/footer/buttons */
-  --brand-contrast: #ffffff;
-  --focus: #757575;       /* focus ring */
+/* App theme stylesheet
+   Code comments in English only.
+*/
+
+/* ---------- CSS Variables (Light by default) ---------- */
+:root {
+  --bg: #f5f6f7;
+  --text: #1e1f22;
+  --muted: #5c606a;
+  --card: #ffffff;
+  --surface: #fbfbfc;
+  --border: rgba(0, 0, 0, 0.08);
+
+  --primary: #546e7a;    /* blue-grey 600 */
+  --primary-contrast: #ffffff;
+  --accent: #90caf9;     /* light blue 300 */
+
+  --shadow: 0 6px 24px rgba(0,0,0,.08);
 }
 
-/* ---------- Base ---------- */
-html,body{background:var(--bg);color:var(--text);}
-main{min-height:70vh;}
-a{color:#424242;}
-a:hover{filter:brightness(0.9);}
-.brand-logo{font-weight:700;letter-spacing:.2px;}
+/* ---------- Dark mode (auto) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111316;
+    --text: #e7e9ee;
+    --muted: #a0a5b1;
+    --card: #181b1f;
+    --surface: #14171b;
+    --border: rgba(255,255,255,0.08);
 
-/* ---------- Nav & Footer ---------- */
-nav, nav.teal{background:var(--brand) !important;}
-.page-footer, .page-footer.teal{background:var(--brand) !important;color:var(--brand-contrast);}
-.page-footer .container, nav .container, .nav-wrapper a{color:var(--brand-contrast) !important}
+    --primary: #90a4ae;
+    --primary-contrast: #111316;
+    --accent: #64b5f6;
 
-/* ---------- Cards ---------- */
-.card{border-radius:14px;background:var(--surface);}
-.card .card-content{padding:18px 20px;}
-.card:hover{transform:translateY(-1px);transition:transform .15s ease}
+    --shadow: 0 10px 30px rgba(0,0,0,.45);
+  }
+}
+
+/* ---------- Manual dark theme opt-in (fallback) ---------- */
+[data-theme="dark"] {
+  --bg: #111316;
+  --text: #e7e9ee;
+  --muted: #a0a5b1;
+  --card: #181b1f;
+  --surface: #14171b;
+  --border: rgba(255,255,255,0.08);
+
+  --primary: #90a4ae;
+  --primary-contrast: #111316;
+  --accent: #64b5f6;
+
+  --shadow: 0 10px 30px rgba(0,0,0,.45);
+}
+
+/* ---------- Base layout ---------- */
+html, body { background: var(--bg); color: var(--text); }
+
+/* Header: force neutral background (even if Materialize color classes are present) */
+header, .navbar-fixed, .navbar-fixed nav,
+nav, nav.nav-extended, nav .nav-wrapper {
+  background-color: var(--card) !important;
+  background: var(--card) !important;
+  border-bottom: 1px solid var(--border);
+  box-shadow: none !important;
+}
+nav.teal, nav.green, .nav-wrapper.teal, .nav-wrapper.green,
+header .teal, header .green, .navbar-fixed .teal, .navbar-fixed .green {
+  background-color: var(--card) !important;
+  background: var(--card) !important;
+}
+nav .brand-logo, nav a, nav ul li a { color: var(--text) !important; }
+
+main { padding-bottom: 64px; }
+
+/* Cards & panels */
+.card { background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); }
+.card .card-title { color: var(--text); }
+.card .card-content p { color: var(--text); }
+
+/* ---------- Typography helpers ---------- */
+.text-muted, .grey-text { color: var(--muted) !important; }
 
 /* ---------- Buttons ---------- */
-.btn, .btn-large, .btn-small{border-radius:10px;background-color:var(--brand);}
-.btn:hover{filter:brightness(1.05)}
-.btn.btn-flat{background:transparent !important;color:var(--text) !important}
-.btn-primary{background-color:var(--brand) !important;color:var(--brand-contrast) !important}
-
-/* ---------- Forms (override Materialize teal focus) ---------- */
-.input-field input:focus,
-.input-field textarea:focus{
-  border-bottom:1px solid var(--focus) !important;
-  box-shadow:0 1px 0 0 var(--focus) !important;
+.btn, .btn-large {
+  background-color: var(--primary) !important;
+  color: var(--primary-contrast) !important;
+  box-shadow: none;
 }
-.input-field input:focus + label,
-.input-field textarea:focus + label{ color:var(--focus) !important; }
-.select-wrapper input.select-dropdown:focus{
-  border-bottom:1px solid var(--focus) !important;
-  box-shadow:0 1px 0 0 var(--focus) !important;
+.btn:hover, .btn-large:hover { filter: brightness(1.05); }
+.btn-flat { color: var(--primary) !important; }
+
+/* ---------- Inputs ---------- */
+.input-field input, .input-field textarea.materialize-textarea {
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
 }
-
-/* Checkbox/radio focus color */
-[type="checkbox"].filled-in:checked + span:not(.lever):after{border:2px solid var(--focus);background-color:var(--focus)}
-[type="radio"].with-gap:checked + span:after{background-color:var(--focus);}
-
-/* ---------- Hero ---------- */
-.hero{
-  margin-top:24px;border-radius:16px;
-  background:linear-gradient(135deg, rgba(97,97,97,.12), rgba(158,158,158,.12));
-  padding:24px;
+.input-field input:focus, .input-field textarea.materialize-textarea:focus {
+  border-bottom: 1px solid var(--accent);
+  box-shadow: 0 1px 0 0 var(--accent);
 }
-.hero h3{margin:0 0 6px 0;font-weight:700}
-.hero p{margin:0 0 16px 0;color:var(--muted)}
+.input-field label { color: var(--muted); }
+.input-field input:focus + label, .input-field textarea:focus + label { color: var(--accent); }
 
-/* ---------- Toasts ---------- */
-.toast{background:#424242 !important;color:#fff !important;border-radius:10px}
-
-/* ---------- Utilities ---------- */
-.mt-2{margin-top:.5rem}
-.mt-3{margin-top:1rem}
-.mt-4{margin-top:1.5rem}
-.text-muted{color:var(--muted)}
-
-/* ---------- Mobile-first tweaks ---------- */
-@media (max-width: 600px){
-  .container{width:92%;}
-  .btn, .btn-large{width:100%}           /* easier taps */
-  .card .card-content{padding:16px}      /* tighter spacing */
-  .hero{padding:18px}
+/* ---------- Toast ---------- */
+#toast-container .toast {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
 
-/* ---------- Slightly wider screens ---------- */
-@media (min-width: 601px){
-  .container{width:85%;}
+/* ---------- Stars (rating) ---------- */
+.star-btn { border: none; background: transparent; padding: 4px; cursor: pointer; }
+.star-btn .material-icons.star-icon { font-size: 28px; vertical-align: middle; color: var(--accent); }
+.star-btn:hover .material-icons.star-icon { transform: translateY(-1px); }
+
+/* ---------- Links ---------- */
+a { color: var(--accent); }
+a:hover { filter: brightness(1.1); }
+
+/* ---------- Collections (Materialize) ---------- */
+.collection { border: 1px solid var(--border) !important; background: var(--card) !important; }
+.collection .collection-item {
+  background-color: transparent !important;
+  color: var(--text) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.collection .collection-item:last-child { border-bottom: none !important; }
+.collection .secondary-content, .collection .title { color: var(--muted) !important; }
+
+/* ---------- Chips / badges ---------- */
+.badge, .chip { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+
+/* ---------- Utility spacing ---------- */
+.mt-2 { margin-top: .5rem; }
+.mt-3 { margin-top: 1rem; }
+.mt-4 { margin-top: 1.5rem; }
+.right-align { text-align: right; }
+
+/* ---------- Tables ---------- */
+table.striped > tbody > tr:nth-child(odd) { background-color: var(--surface); }
+table, th, td { color: var(--text); border-color: var(--border); }
+
+/* ---------- Footer (neutral) ---------- */
+footer.page-footer {
+  background: var(--card) !important;
+  color: var(--muted) !important;
+  border-top: 1px solid var(--border);
+  box-shadow: none;
+}
+footer.page-footer .footer-copyright {
+  background: transparent !important;
+  color: var(--muted) !important;
+  border-top: 1px solid var(--border);
 }
 
-/* ======================================================================= */
-/*                                DARK MODE                                */
-/* ======================================================================= */
-@media (prefers-color-scheme: dark){
-  :root{
-    --bg: #121212;
-    --surface: #1e1e1e;
-    --surface-2: #2a2a2a;
-    --text: #eaeaea;
-    --muted: #bdbdbd;
-    --brand: #2c2c2c;       /* nav/footer/buttons */
-    --brand-contrast: #ffffff;
-    --focus: #9e9e9e;
-  }
+/* ---------- Misc ---------- */
+hr { border: 0; border-top: 1px solid var(--border); }
 
-  html,body{background:var(--bg);color:var(--text);}
-  a{color:#e0e0e0;}
-  .card{background:var(--surface);}
-  .toast{background:#333 !important;color:#fff !important;}
-
-  /* Nav + footer stay dark via variables */
-  nav, nav.teal{background:var(--brand) !important;}
-  .page-footer, .page-footer.teal{background:var(--brand) !important;color:var(--brand-contrast);}
-
-  /* Sidenav + dropdowns readable */
-  .sidenav{background:var(--surface);}
-  .sidenav a{color:var(--text) !important;}
-  .dropdown-content{background-color:var(--surface);}
-  .dropdown-content li > a, .dropdown-content li > span { color:var(--text); }
-
-  /* Inputs/labels in dark */
-  .materialize-textarea,
-  input[type=text], input[type=email], input[type=password], textarea{ color:var(--text); }
-  .input-field label{ color:var(--muted); }
-  .input-field input:focus + label,
-  .input-field textarea:focus + label{ color:var(--focus) !important; }
-}
-
-/* ======================================================================= */
-/*                             RATING (STARS)                               */
-/* ======================================================================= */
-.rating{display:inline-flex;gap:2px}
-.rating .star-btn{background:transparent;border:0;padding:6px;cursor:pointer;line-height:1}
-.rating .star-icon{font-size:28px;color:#ffca28}   /* subtle amber for clarity */
-@media (max-width:600px){ .rating .star-icon{font-size:32px} }  /* bigger taps on phones */
+/* Keep Material Icons visible on dark backgrounds */
+.material-icons { color: inherit; }

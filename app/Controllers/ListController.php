@@ -9,6 +9,7 @@ use App\Core\Flash;
 use App\Core\View;
 use App\Models\UserList;
 use App\Models\Item;
+use App\Models\Rating;
 
 final class ListController
 {
@@ -94,11 +95,16 @@ final class ListController
         // CSRF for item creation (form on this page)
         $createItemToken = Csrf::token('create_item_' . $list->id);
 
-        // Per-item CSRF for rating (one-time per item; reloading page allows changing again)
+        // Per-item CSRF for rating (for AJAX)
         $rateTokens = [];
+        $itemIds = [];
         foreach ($items as $it) {
             $rateTokens[$it['id']] = Csrf::token('rate_' . $it['id']);
+            $itemIds[] = (int)$it['id'];
         }
+
+        // Latest comments per item (up to 3)
+        $commentsByItem = Rating::latestCommentsForItems($itemIds, 3);
 
         // Can user add items? (public lists: any logged-in; private: only owner)
         $canAdd = $list->visibility === 'public'
@@ -106,13 +112,14 @@ final class ListController
             : ((int)($uid ?? -1) === $list->user_id);
 
         View::render('lists/show', [
-            'title'  => $list->title,
-            'listId' => $list->id,
-            'list'   => $list,
-            'items'  => $items,
-            'canAdd' => $canAdd,
+            'title'           => $list->title,
+            'listId'          => $list->id,
+            'list'            => $list,
+            'items'           => $items,
+            'canAdd'          => $canAdd,
             'createItemToken' => $createItemToken,
-            'rateTokens' => $rateTokens,
+            'rateTokens'      => $rateTokens,
+            'commentsByItem'  => $commentsByItem, // <-- important
         ]);
     }
 
