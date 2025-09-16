@@ -9,18 +9,45 @@ use PDO;
 final class Rating
 {
     /**
-     * Create or update a rating with optional comment.
-     * Backticks around `comment` to avoid keyword confusion.
+     * Legacy helper – keeps behavior (no explicit clear).
      */
     public static function upsert(int $itemId, int $userId, int $score, ?string $comment = null): void
     {
+        self::upsertWithPolicy($itemId, $userId, $score, $comment, false);
+    }
+
+    /**
+     * Create or update a rating with comment policy.
+     * If $clearComment is true -> comment will be set to NULL.
+     * If $comment is null and $clearComment is false -> keep existing comment.
+     * If $comment is non-null -> set/replace with that text.
+     */
+    public static function upsertWithPolicy(int $itemId, int $userId, int $score, ?string $comment, bool $clearComment): void
+    {
         $score = max(1, min(5, $score));
+
+        if ($clearComment) {
+            // Force NULL comment on upsert
+            $sql = '
+                INSERT INTO ratings (`item_id`, `user_id`, `score`, `comment`)
+                VALUES (?, ?, ?, NULL)
+                ON DUPLICATE KEY UPDATE
+                    `score` = VALUES(`score`),
+                    `comment` = NULL,
+                    `created_at` = CURRENT_TIMESTAMP
+            ';
+            $stmt = Db::pdo()->prepare($sql);
+            $stmt->execute([$itemId, $userId, $score]);
+            return;
+        }
+
+        // Preserve existing comment if $comment is NULL; otherwise update to the given text
         $sql = '
             INSERT INTO ratings (`item_id`, `user_id`, `score`, `comment`)
             VALUES (?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
-                `score`   = VALUES(`score`),
-                `comment` = VALUES(`comment`),
+                `score` = VALUES(`score`),
+                `comment` = COALESCE(VALUES(`comment`), `comment`),
                 `created_at` = CURRENT_TIMESTAMP
         ';
         $stmt = Db::pdo()->prepare($sql);
@@ -41,10 +68,10 @@ final class Rating
 
     /**
      * Fetch up to $limit latest non-empty comments per item for the given item IDs.
-     * Returns: itemId => list of {user, score, comment, created_at}
+     * Returns: itemId => list of {user_id, user, score, comment, created_at}
      *
      * @param array<int,int> $itemIds
-     * @return array<int, array<int, array{user:string,score:int,comment:string,created_at:string}>>
+     * @return array<int, array<int, array{user_id:int,user:string,score:int,comment:string,created_at:string}>>
      */
     public static function latestCommentsForItems(array $itemIds, int $limit = 3): array
     {
@@ -58,6 +85,7 @@ final class Rating
         $sql = "
             SELECT
                 r.`item_id`,
+                r.`user_id`,
                 r.`score`,
                 r.`comment`,
                 r.`created_at`,
@@ -86,6 +114,7 @@ final class Rating
                 continue;
             }
             $out[$iid][] = [
+                'user_id'    => (int)$row['user_id'],
                 'user'       => (string)$row['user'],
                 'score'      => (int)$row['score'],
                 'comment'    => (string)$row['comment'],

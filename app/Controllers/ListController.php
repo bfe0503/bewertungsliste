@@ -103,7 +103,7 @@ final class ListController
             $itemIds[] = (int)$it['id'];
         }
 
-        // Latest comments per item (up to 3)
+        // Latest comments per item (up to 3) incl. user_id for own-comment detection
         $commentsByItem = Rating::latestCommentsForItems($itemIds, 3);
 
         // Can user add items? (public lists: any logged-in; private: only owner)
@@ -119,7 +119,8 @@ final class ListController
             'canAdd'          => $canAdd,
             'createItemToken' => $createItemToken,
             'rateTokens'      => $rateTokens,
-            'commentsByItem'  => $commentsByItem, // <-- important
+            'commentsByItem'  => $commentsByItem,
+            'currentUserId'   => $uid !== null ? (int)$uid : null,
         ]);
     }
 

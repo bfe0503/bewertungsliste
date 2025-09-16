@@ -1,11 +1,22 @@
 <?php
+declare(strict_types=1);
+
 /** @var \App\Models\UserList|null $list */
 /** @var int|null $listId */
-/** @var array<int, array{id:int,name:string,description:?string,avg:float,count:int,my_score:?int,my_comment:?string}> $items */
-/** @var bool $canAdd */
-/** @var string $createItemToken */
-/** @var array<int,string> $rateTokens */
-/** @var array<int, array<int, array{user_id:int,user:string,score:int,comment:string,created_at:string}>> $commentsByItem */
+/** @var array<int, array{
+ *   id:int,
+ *   name:string,
+ *   description:?string,
+ *   avg:float,
+ *   count:int,
+ *   my_score:?int,
+ *   my_comment?:?string
+ * }> $items
+ * @var bool $canAdd
+ * @var string $createItemToken
+ * @var array<int,string> $rateTokens
+ * @var array<int, array<int, array{user_id:int,user:string,score:int,comment:string,created_at:string}>> $commentsByItem
+ */
 
 if (!$list): ?>
   <div class="section">
@@ -49,60 +60,71 @@ if (!$list): ?>
     <?php else: ?>
       <div class="row">
         <?php foreach ($items as $it): ?>
+          <?php
+            // Defensive reads to avoid PHP warnings if keys are missing.
+            $itemId    = (int)$it['id'];
+            $name      = (string)$it['name'];
+            $desc      = isset($it['description']) && $it['description'] !== null ? (string)$it['description'] : null;
+            $avg       = isset($it['avg']) ? (float)$it['avg'] : 0.0;
+            $count     = isset($it['count']) ? (int)$it['count'] : 0;
+            $myScore   = isset($it['my_score']) && $it['my_score'] !== null ? (int)$it['my_score'] : null;
+            $myComment = isset($it['my_comment']) && $it['my_comment'] !== null ? (string)$it['my_comment'] : '';
+            $rateCsrf  = htmlspecialchars($rateTokens[$itemId] ?? '', ENT_QUOTES, 'UTF-8');
+          ?>
           <div class="col s12 m6">
             <div class="card">
               <div class="card-content">
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">
                   <span class="card-title" style="margin:0;">
-                    <?= htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') ?>
+                    <?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>
                   </span>
 
                   <span
                     class="chip my-score-badge"
-                    data-item="<?= (int)$it['id'] ?>"
-                    style="<?= $it['my_score'] === null ? 'display:none;' : '' ?>"
+                    data-item="<?= $itemId ?>"
+                    style="<?= $myScore === null ? 'display:none;' : '' ?>"
                     aria-live="polite"
                   >
                     <i class="material-icons" style="vertical-align:middle;margin-right:4px;">star</i>
-                    Deine Bewertung: <strong style="margin-left:4px;"><?= $it['my_score'] !== null ? (int)$it['my_score'] : '' ?></strong>
+                    Deine Bewertung: <strong style="margin-left:4px;"><?= $myScore !== null ? $myScore : '' ?></strong>
                   </span>
                 </div>
 
-                <?php if ($it['description']): ?>
-                  <p style="margin-top:8px;"><?= nl2br(htmlspecialchars($it['description'], ENT_QUOTES, 'UTF-8')) ?></p>
+                <?php if ($desc): ?>
+                  <p style="margin-top:8px;"><?= nl2br(htmlspecialchars($desc, ENT_QUOTES, 'UTF-8')) ?></p>
                 <?php endif; ?>
 
                 <!-- Rating block -->
                 <div class="mt-3">
                   <div class="rating"
-                       data-item-id="<?= (int)$it['id'] ?>"
-                       data-csrf="<?= htmlspecialchars($rateTokens[$it['id']] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                       data-my-score="<?= $it['my_score'] !== null ? (int)$it['my_score'] : 0 ?>">
+                       data-item-id="<?= $itemId ?>"
+                       data-csrf="<?= $rateCsrf ?>"
+                       data-my-score="<?= $myScore !== null ? $myScore : 0 ?>">
                     <?php for ($s=1; $s<=5; $s++): ?>
                       <button type="button" class="star-btn" data-score="<?= $s ?>" aria-label="Bewerten mit <?= $s ?> Stern(en)">
-                        <i class="material-icons star-icon"><?= ($it['my_score'] !== null && $it['my_score'] >= $s) ? 'star' : 'star_border' ?></i>
+                        <i class="material-icons star-icon"><?= ($myScore !== null && $myScore >= $s) ? 'star' : 'star_border' ?></i>
                       </button>
                     <?php endfor; ?>
                   </div>
                   <div class="text-muted mt-2">
-                    Ø <span class="avg" data-item="<?= (int)$it['id'] ?>"><?= number_format($it['avg'], 2, ',', '') ?></span>
-                    · <span class="count" data-item="<?= (int)$it['id'] ?>"><?= (int)$it['count'] ?></span> Bewertungen
+                    Ø <span class="avg" data-item="<?= $itemId ?>"><?= number_format($avg, 2, ',', '') ?></span>
+                    · <span class="count" data-item="<?= $itemId ?>"><?= $count ?></span> Bewertungen
                   </div>
                 </div>
 
                 <!-- Comment toggle + field (optional) -->
                 <div class="mt-3">
-                  <a href="#!" class="comment-toggle" data-target="<?= (int)$it['id'] ?>">
+                  <a href="#!" class="comment-toggle" data-target="<?= $itemId ?>">
                     <i class="material-icons left">chat</i>
-                    <?= $it['my_comment'] !== null && $it['my_comment'] !== '' ? 'Kommentar bearbeiten' : 'Kommentar hinzufügen/ändern (optional)' ?>
+                    <?= ($myComment !== '') ? 'Kommentar bearbeiten' : 'Kommentar hinzufügen/ändern (optional)' ?>
                   </a>
-                  <div class="comment-block" id="comment-<?= (int)$it['id'] ?>" style="display:none;">
+                  <div class="comment-block" id="comment-<?= $itemId ?>" style="display:none;">
                     <div class="input-field" style="margin-top:16px;">
-                      <textarea class="materialize-textarea comment-input" maxlength="2000" data-item="<?= (int)$it['id'] ?>"><?= htmlspecialchars($it['my_comment'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                      <textarea class="materialize-textarea comment-input" maxlength="2000" data-item="<?= $itemId ?>"><?= htmlspecialchars($myComment, ENT_QUOTES, 'UTF-8') ?></textarea>
                       <label>Kommentar (max. 2000 Zeichen)</label>
                     </div>
                     <div class="right-align">
-                      <button type="button" class="btn-flat clear-comment" data-item="<?= (int)$it['id'] ?>">
+                      <button type="button" class="btn-flat clear-comment" data-item="<?= $itemId ?>">
                         Leeren
                       </button>
                     </div>
@@ -110,8 +132,8 @@ if (!$list): ?>
                 </div>
 
                 <!-- Latest comments list -->
-                <?php $cl = $commentsByItem[$it['id']] ?? []; if (!empty($cl)): ?>
-                  <div class="mt-3 comments-wrap" data-item="<?= (int)$it['id'] ?>">
+                <?php $cl = $commentsByItem[$itemId] ?? []; if (!empty($cl)): ?>
+                  <div class="mt-3 comments-wrap" data-item="<?= $itemId ?>">
                     <span class="grey-text text-darken-1">Letzte Kommentare:</span>
                     <ul class="collection comments-list" style="border:none;" aria-live="polite">
                       <?php foreach ($cl as $c): ?>
@@ -139,7 +161,7 @@ if (!$list): ?>
                     </ul>
                   </div>
                 <?php else: ?>
-                  <div class="mt-3 comments-wrap" data-item="<?= (int)$it['id'] ?>" style="display:none;">
+                  <div class="mt-3 comments-wrap" data-item="<?= $itemId ?>" style="display:none;">
                     <span class="grey-text text-darken-1">Letzte Kommentare:</span>
                     <ul class="collection comments-list" style="border:none;" aria-live="polite"></ul>
                   </div>
@@ -258,7 +280,6 @@ if (!$list): ?>
         return li;
       }
 
-      // Replace existing own comment or prepend if none exists
       function upsertOwnComment(ul, score, comment) {
         const userId = currentUserId;
         const created = formatDate(new Date());
@@ -275,16 +296,25 @@ if (!$list): ?>
           ul.appendChild(newLi);
         }
 
-        // Keep at most 3 items
         while (ul.childElementCount > 3) {
           ul.removeChild(ul.lastElementChild);
         }
       }
 
+      // Confirm modal buttons
+      document.getElementById('confirm-apply')?.addEventListener('click', async () => {
+        if (!pending.itemId || !pending.container) return;
+        await submitRating(pending.container, pending.score, true);
+        pending = { itemId: null, score: null, container: null };
+      });
+      document.getElementById('confirm-cancel')?.addEventListener('click', () => {
+        pending = { itemId: null, score: null, container: null };
+      });
+
       async function submitRating(container, score, confirmed=false){
         if (!isLogged) { if (window.M && M.toast) M.toast({html: 'Bitte zuerst anmelden.'}); return; }
 
-        // prevent double clicks while posting
+        // guard against double clicks while posting
         if (container.dataset.posting === '1') return;
         container.dataset.posting = '1';
         container.querySelectorAll('.star-btn').forEach(b => b.setAttribute('disabled','disabled'));
@@ -316,7 +346,6 @@ if (!$list): ?>
           const data = await res.json();
           if (!data.ok) { throw new Error(data.message || 'Fehler'); }
 
-          // Update stars + stats
           fillStars(container, score);
           container.dataset.myScore = String(score);
 
@@ -325,10 +354,8 @@ if (!$list): ?>
           if (avg) avg.textContent = (Number(data.avg)).toFixed(2).replace('.', ',');
           if (cnt) cnt.textContent = String(data.count);
 
-          // Rotate CSRF
           if (data.next_csrf) { container.dataset.csrf = data.next_csrf; }
 
-          // Badge
           const badge = document.querySelector('.my-score-badge[data-item="'+itemId+'"]');
           if (badge) {
             badge.style.display = 'inline-flex';
@@ -336,11 +363,9 @@ if (!$list): ?>
             if (strong) strong.textContent = String(score);
           }
 
-          // Comments UI
           const wrap = document.querySelector('.comments-wrap[data-item="'+itemId+'"]');
           if (wrap) {
             if (clearComment) {
-              // remove own comment if exists
               const ul = wrap.querySelector('.comments-list');
               if (ul && currentUserId !== null) {
                 const exist = ul.querySelector(`li.collection-item[data-user-id="${currentUserId}"]`);
@@ -359,7 +384,6 @@ if (!$list): ?>
             }
           }
 
-          // Clear textarea only if we sent a new comment
           if (ta && comment) { ta.value = ''; if (window.M && M.updateTextFields) M.updateTextFields(); }
 
           if (window.M && M.toast) M.toast({html: data.message});
@@ -370,16 +394,6 @@ if (!$list): ?>
           container.querySelectorAll('.star-btn').forEach(b => b.removeAttribute('disabled'));
         }
       }
-
-      // Modal buttons
-      document.getElementById('confirm-apply')?.addEventListener('click', async () => {
-        if (!pending.itemId || !pending.container) return;
-        await submitRating(pending.container, pending.score, true);
-        pending = { itemId: null, score: null, container: null };
-      });
-      document.getElementById('confirm-cancel')?.addEventListener('click', () => {
-        pending = { itemId: null, score: null, container: null };
-      });
 
       // Toggle comment block visibility
       document.querySelectorAll('.comment-toggle').forEach(link => {
