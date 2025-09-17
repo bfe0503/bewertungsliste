@@ -16,7 +16,7 @@ session_name('bewertung_session');
 session_set_cookie_params([
     'lifetime' => 0,
     'path'     => $cookiePath,  // important for subfolder apps
-    'domain'   => '',           // localhost
+    'domain'   => '',           // set to your domain on prod if needed
     'secure'   => false,        // set true on HTTPS in production
     'httponly' => true,
     'samesite' => 'Lax',
@@ -33,15 +33,15 @@ session_start();
 define('BASE_PATH', $rootPath);
 require BASE_PATH . '/app/bootstrap.php';
 
-// --- Define routes (use closures to avoid callable type pitfalls) ---
+// --- Define routes (closures calling controllers) ---
 $router = new \App\Core\Router();
 
-// Home
+/** Home */
 $router->get('/', static function (array $params = []): void {
     \App\Core\View::render('home/index', ['title' => 'Bewertung – Home']);
 });
 
-// Lists (controller)
+/** Lists (existing: index, create, show) */
 $router->get('/lists', static function (array $params = []): void {
     (new \App\Controllers\ListController())->index();
 });
@@ -52,7 +52,18 @@ $router->get('/lists/{id}', static function (array $params): void {
     (new \App\Controllers\ListController())->show($params);
 });
 
-// Auth (controller)
+/** Lists owner edit/delete (NEW) */
+$router->get('/lists/{id}/edit', static function (array $params): void {
+    (new \App\Controllers\ListController())->edit($params);
+});
+$router->post('/lists/{id}', static function (array $params): void {
+    (new \App\Controllers\ListController())->update($params);
+});
+$router->post('/lists/{id}/delete', static function (array $params): void {
+    (new \App\Controllers\ListController())->delete($params);
+});
+
+/** Auth (existing but username-only now) */
 $router->get('/register', static function (array $params = []): void {
     (new \App\Controllers\AuthController())->showRegister();
 });
@@ -69,12 +80,40 @@ $router->post('/logout', static function (array $params = []): void {
     (new \App\Controllers\AuthController())->logout();
 });
 
-// Items (create + rate via AJAX)
+/** Account (NEW) */
+$router->get('/account', static function (array $params = []): void {
+    (new \App\Controllers\AccountController())->show();
+});
+$router->post('/account', static function (array $params = []): void {
+    (new \App\Controllers\AccountController())->update();
+});
+
+/** Items (existing: create + rate via AJAX) */
 $router->post('/lists/{id}/items', static function (array $params): void {
     (new \App\Controllers\ItemController())->create($params);
 });
 $router->post('/items/{id}/rate', static function (array $params): void {
     (new \App\Controllers\ItemController())->rate($params);
+});
+
+/** Admin (NEW) */
+$router->get('/admin', static function (array $params = []): void {
+    (new \App\Controllers\AdminController())->dashboard();
+});
+$router->get('/admin/users', static function (array $params = []): void {
+    (new \App\Controllers\AdminController())->users();
+});
+$router->post('/admin/users/{id}/reset', static function (array $params): void {
+    (new \App\Controllers\AdminController())->resetPassword($params);
+});
+$router->post('/admin/users/{id}/delete', static function (array $params): void {
+    (new \App\Controllers\AdminController())->deleteUser($params);
+});
+$router->get('/admin/lists', static function (array $params = []): void {
+    (new \App\Controllers\AdminController())->lists();
+});
+$router->post('/admin/lists/{id}/delete', static function (array $params): void {
+    (new \App\Controllers\AdminController())->deleteList($params);
 });
 
 // --- Normalize request path and dispatch ---
@@ -90,4 +129,3 @@ $path = $rawPath === '' ? '/' : $rawPath;
 $path = rtrim($path, '/') ?: '/';
 
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $path);
-

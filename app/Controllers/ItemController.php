@@ -32,7 +32,7 @@ final class ItemController
         }
 
         // Private lists: only owner may add items; public lists: any logged-in user
-        if ($list->visibility === 'private' && $list->user_id !== (int)Auth::id()) {
+        if ((int)$list->is_public !== 1 && $list->user_id !== (int)Auth::id()) {
             http_response_code(403);
             Flash::add('error', 'Kein Zugriff auf diese private Liste.');
             $this->redirect('/lists/' . $listId);
@@ -46,26 +46,32 @@ final class ItemController
             return;
         }
 
-        $name = trim((string)($_POST['name'] ?? ''));
-        $desc = trim((string)($_POST['description'] ?? ''));
+        // Accept both legacy (name/description) and new (title/url) payloads.
+        $title = trim((string)($_POST['title'] ?? $_POST['name'] ?? ''));
+        $url   = trim((string)($_POST['url'] ?? $_POST['description'] ?? ''));
 
-        if ($name === '') {
-            Flash::add('error', 'Name ist erforderlich.');
+        if ($title === '') {
+            Flash::add('error', 'Name/Titel ist erforderlich.');
             $this->redirect('/lists/' . $listId);
             return;
         }
-        if (mb_strlen($name) > 150) {
-            Flash::add('error', 'Name ist zu lang (max. 150).');
+        if (mb_strlen($title) > 255) {
+            Flash::add('error', 'Name/Titel ist zu lang (max. 255).');
+            $this->redirect('/lists/' . $listId);
+            return;
+        }
+        if ($url !== '' && mb_strlen($url) > 2048) {
+            Flash::add('error', 'URL ist zu lang (max. 2048).');
             $this->redirect('/lists/' . $listId);
             return;
         }
 
-        Item::create($listId, $name, $desc !== '' ? $desc : null);
+        Item::create($listId, (int)Auth::id(), $title, $url !== '' ? $url : null);
         Flash::add('success', 'Eintrag hinzugefügt.');
         $this->redirect('/lists/' . $listId);
     }
 
-    /** Rate an item via JSON (AJAX). Supports optional "comment" and "clearComment". */
+    /** Rate an item via JSON (AJAX) */
     public function rate(array $params): void
     {
         header('Content-Type: application/json; charset=utf-8');
@@ -91,19 +97,8 @@ final class ItemController
             return;
         }
 
-        $score        = isset($data['score']) ? (int)$data['score'] : 0;
-        $csrf         = isset($data['csrf']) ? (string)$data['csrf'] : '';
-        $commentInput = array_key_exists('comment', $data) ? $data['comment'] : null; // detect presence
-        $clearComment = isset($data['clearComment']) ? (bool)$data['clearComment'] : false;
-
-        $comment = null;
-        if ($commentInput !== null) {
-            $comment = trim((string)$commentInput);
-            if ($comment === '') {
-                // empty string means "no change" unless clearComment is true
-                $comment = null;
-            }
-        }
+        $score = isset($data['score']) ? (int)$data['score'] : 0;
+        $csrf  = isset($data['csrf'])  ? (string)$data['csrf']  : '';
 
         if (!Csrf::validate('rate_' . $itemId, $csrf)) {
             http_response_code(403);
@@ -115,13 +110,9 @@ final class ItemController
             echo json_encode(['ok' => false, 'message' => 'Score muss 1–5 sein.']);
             return;
         }
-        if (!$clearComment && $comment !== null && mb_strlen($comment) > 2000) {
-            http_response_code(400);
-            echo json_encode(['ok' => false, 'message' => 'Kommentar ist zu lang (max. 2000 Zeichen).']);
-            return;
-        }
 
-        Rating::upsertWithPolicy($itemId, (int)Auth::id(), $score, $comment, $clearComment);
+        // Store/update rating (Ratings table uses column name `rating`)
+        Rating::upsertScore($itemId, (int)Auth::id(), $score);
         $stats = Rating::stats($itemId);
 
         // Issue a fresh CSRF token so the client can rate again without reload.

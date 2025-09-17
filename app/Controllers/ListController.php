@@ -18,8 +18,10 @@ final class ListController
         $own = [];
         if (Auth::check()) {
             $uid = (int)Auth::id();
+            // DB uses user_id
             $own = UserList::allByUser($uid);
         }
+        // public lists (is_public = 1)
         $public = UserList::allPublic(30);
         $token = Csrf::token('create_list');
 
@@ -45,9 +47,9 @@ final class ListController
             return;
         }
 
-        $title = trim((string)($_POST['title'] ?? ''));
+        $title       = trim((string)($_POST['title'] ?? ''));
         $description = trim((string)($_POST['description'] ?? ''));
-        $visibility = (string)($_POST['visibility'] ?? 'public');
+        $visibility  = (string)($_POST['visibility'] ?? 'public');
         if (!in_array($visibility, ['public', 'private'], true)) {
             $visibility = 'public';
         }
@@ -64,7 +66,11 @@ final class ListController
         }
 
         $uid = (int)Auth::id();
-        $id = UserList::create($uid, $title, $description !== '' ? $description : null, $visibility);
+        $isPublic = $visibility === 'public' ? 1 : 0;
+
+        // DB has columns: user_id, title, description, is_public
+        $id = UserList::create($uid, $title, $description !== '' ? $description : null, $isPublic);
+
         Flash::add('success', 'Liste erstellt.');
         $this->redirect('/lists/' . $id);
     }
@@ -72,7 +78,7 @@ final class ListController
     public function show(array $params): void
     {
         $id = isset($params['id']) ? (int)$params['id'] : 0;
-        $list = $id > 0 ? UserList::find($id) : null;
+        $list = $id > 0 ? UserList::findById($id) : null;
 
         if (!$list) {
             http_response_code(404);
@@ -80,7 +86,8 @@ final class ListController
             return;
         }
 
-        if ($list->visibility === 'private') {
+        // Private list: only owner (user_id) may see
+        if ((int)$list->is_public !== 1) {
             $uid = Auth::id();
             if ($uid === null || $list->user_id !== (int)$uid) {
                 http_response_code(403);
@@ -107,7 +114,7 @@ final class ListController
         $commentsByItem = Rating::latestCommentsForItems($itemIds, 3);
 
         // Can user add items? (public lists: any logged-in; private: only owner)
-        $canAdd = $list->visibility === 'public'
+        $canAdd = ((int)$list->is_public === 1)
             ? Auth::check()
             : ((int)($uid ?? -1) === $list->user_id);
 
@@ -122,6 +129,79 @@ final class ListController
             'commentsByItem'  => $commentsByItem,
             'currentUserId'   => $uid !== null ? (int)$uid : null,
         ]);
+    }
+
+    public function edit(array $params): void
+    {
+        $uid = Auth::id();
+        if ($uid === null) {
+            Flash::add('error', 'Bitte anmelden.');
+            $this->redirect('/login');
+            return;
+        }
+        $id = (int)($params['id'] ?? 0);
+        $list = UserList::findById($id);
+        if (!$list || (int)$list->user_id !== (int)$uid) {
+            Flash::add('error', 'Nicht berechtigt.');
+            $this->redirect('/');
+            return;
+        }
+        $token = Csrf::token('list_update_' . $id);
+        View::render('lists/edit', ['title'=>'Liste bearbeiten', 'list'=>$list, 'csrf'=>$token]);
+    }
+
+    public function update(array $params): void
+    {
+        $uid = Auth::id();
+        if ($uid === null) {
+            Flash::add('error', 'Bitte anmelden.');
+            $this->redirect('/login');
+            return;
+        }
+        $id = (int)($params['id'] ?? 0);
+        if (!Csrf::validate('list_update_' . $id, $_POST['csrf'] ?? '')) {
+            Flash::add('error', 'Ungültiges CSRF-Token.');
+            $this->redirect('/');
+            return;
+        }
+        $list = UserList::findById($id);
+        if (!$list || (int)$list->user_id !== (int)$uid) {
+            Flash::add('error', 'Nicht berechtigt.');
+            $this->redirect('/');
+            return;
+        }
+        $title      = trim((string)($_POST['title'] ?? ''));
+        $visibility = (string)($_POST['visibility'] ?? 'public');
+        $isPublic   = $visibility === 'public' ? 1 : 0;
+
+        UserList::update($id, $title, $isPublic);
+        Flash::add('success', 'Liste aktualisiert.');
+        $this->redirect('/lists/' . $id);
+    }
+
+    public function delete(array $params): void
+    {
+        $uid = Auth::id();
+        if ($uid === null) {
+            Flash::add('error', 'Bitte anmelden.');
+            $this->redirect('/login');
+            return;
+        }
+        $id = (int)($params['id'] ?? 0);
+        if (!Csrf::validate('list_delete_' . $id, $_POST['csrf'] ?? '')) {
+            Flash::add('error', 'Ungültiges CSRF-Token.');
+            $this->redirect('/');
+            return;
+        }
+        $list = UserList::findById($id);
+        if (!$list || (int)$list->user_id !== (int)$uid) {
+            Flash::add('error', 'Nicht berechtigt.');
+            $this->redirect('/');
+            return;
+        }
+        UserList::deleteCascade($id);
+        Flash::add('success', 'Liste gelöscht.');
+        $this->redirect('/');
     }
 
     private function redirect(string $path): void

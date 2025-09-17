@@ -35,3 +35,16 @@ git config --local user.name "dev"
 git config --local user.email "dev@local"
 git add .
 git commit -m "init: clean repo; ignore secrets & runtime; current working app state"
+# Runtime & secrets
+/storage/
+/storage/**
+/config/config.php
+
+# Backups & local dumps
+*.bak-*
+*.tgz
+*.sql
+
+# System files
+.DS_Store
+Thumbs.db
