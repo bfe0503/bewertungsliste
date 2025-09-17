@@ -19,37 +19,39 @@ final class AuthController
 
     public function register(): void
     {
-        $ok = Csrf::validate('register', $_POST['csrf'] ?? null);
-        if (!$ok) {
-            http_response_code(403);
+        if (!Csrf::validate('register', $_POST['csrf'] ?? '')) {
             Flash::add('error', 'Ungültiges CSRF-Token.');
             $this->redirect('/register');
             return;
         }
 
-        $email = trim((string)($_POST['email'] ?? ''));
+        $username = trim((string)($_POST['username'] ?? ''));
         $password = (string)($_POST['password'] ?? '');
-        $display = trim((string)($_POST['display_name'] ?? ''));
 
-        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            Flash::add('error', 'Bitte gib eine gültige E-Mail-Adresse ein.');
-            $this->redirect('/register');
-            return;
+        $errors = [];
+
+        if (!preg_match('/^[a-z0-9_.-]{3,32}$/', $username)) {
+            $errors[] = 'Ungültiger Benutzername (erlaubt a-z, 0-9, _.-, 3–32 Zeichen).';
         }
-        if (strlen($password) < 6) {
-            Flash::add('error', 'Das Passwort muss mindestens 6 Zeichen lang sein.');
-            $this->redirect('/register');
-            return;
+        if (strlen($password) < 12) {
+            $errors[] = 'Das Passwort muss mindestens 12 Zeichen lang sein.';
         }
-        if (User::findByEmail($email)) {
-            Flash::add('error', 'Diese E-Mail ist bereits registriert.');
-            $this->redirect('/register');
-            return;
+        $lower = strtolower($username);
+        if (User::findByUsernameLower($lower)) {
+            $errors[] = 'Benutzername ist bereits vergeben.';
         }
 
-        $userId = User::create($email, $password, $display !== '' ? $display : null);
-        Auth::login($userId);
-        Flash::add('success', 'Willkommen! Du bist jetzt angemeldet.');
+        if ($errors) {
+            foreach ($errors as $e) {
+                Flash::add('error', $e);
+            }
+            $this->redirect('/register');
+            return;
+        }
+
+        $uid = User::createWithUsername($username, password_hash($password, PASSWORD_ARGON2ID));
+        Auth::login($uid);
+        Flash::add('success', 'Willkommen, ' . htmlspecialchars($username));
         $this->redirect('/');
     }
 
@@ -61,37 +63,29 @@ final class AuthController
 
     public function login(): void
     {
-        $ok = Csrf::validate('login', $_POST['csrf'] ?? null);
-        if (!$ok) {
-            http_response_code(403);
+        if (!Csrf::validate('login', $_POST['csrf'] ?? '')) {
             Flash::add('error', 'Ungültiges CSRF-Token.');
             $this->redirect('/login');
             return;
         }
 
-        $email = trim((string)($_POST['email'] ?? ''));
+        $username = trim((string)($_POST['username'] ?? ''));
         $password = (string)($_POST['password'] ?? '');
 
-        $user = $email !== '' ? User::findByEmail($email) : null;
+        $user = User::findByUsernameLower(strtolower($username));
         if (!$user || !password_verify($password, $user->password_hash)) {
-            Flash::add('error', 'Zugangsdaten ungültig.');
+            Flash::add('error', 'Anmeldedaten ungültig.');
             $this->redirect('/login');
             return;
         }
 
         Auth::login($user->id);
-        Flash::add('success', 'Erfolgreich angemeldet.');
+        Flash::add('success', 'Willkommen zurück, ' . htmlspecialchars($user->username ?? ''));
         $this->redirect('/');
     }
 
     public function logout(): void
     {
-        if (!Csrf::validate('logout', $_POST['csrf'] ?? null)) {
-            http_response_code(403);
-            Flash::add('error', 'Ungültiges CSRF-Token.');
-            $this->redirect('/');
-            return;
-        }
         Auth::logout();
         Flash::add('success', 'Abgemeldet.');
         $this->redirect('/');
@@ -99,7 +93,6 @@ final class AuthController
 
     private function redirect(string $path): void
     {
-        // Build location that respects subfolder deployment
         $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
         $loc = $base . $path;
         header('Location: ' . ($loc !== '' ? $loc : '/'));
