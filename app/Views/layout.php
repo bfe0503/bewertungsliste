@@ -97,7 +97,7 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       border-top: 1px solid var(--chrome-line);
     }
 
-    /* ---------- Container-Breite leicht erhöhen ---------- */
+    /* ---------- Container-Breite ---------- */
     .container { max-width: 1120px; }
 
     /* ---------- Typografie ---------- */
@@ -117,7 +117,56 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
     }
     .card .card-content,
     .card-panel .card-content { padding: var(--space-5); }
-    .card .card-title { color: var(--text) !important; margin-bottom: var(--space-3); font-weight: 600; }
+    .card .card-title { color: var(--text) !important; margin: 0; font-weight: 700; }
+
+    /* Card header: consistent title bar with bottom divider */
+    .card .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: var(--space-5) var(--space-5) var(--space-3);
+      border-bottom: 1px solid var(--card-border);
+    }
+    .card .card-header .title {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      min-width: 0; /* for truncation */
+      font-size: 1.15rem;
+      line-height: 1.3;
+      font-weight: 700;
+    }
+    .card .card-header .title .material-icons {
+      font-size: 20px;
+      color: var(--muted);
+    }
+    .card .card-header .title .text {
+      display: inline-block;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card .card-header .actions {
+      display: inline-flex;
+      gap: var(--space-2);
+      flex-shrink: 0;
+    }
+    .card .card-header + .card-content {
+      padding-top: var(--space-3);
+    }
+
+    /* Backward-compat: when view still uses .card-title inside .card-content */
+    .card .card-content > .card-title:first-child {
+      display: block;
+      font-size: 1.15rem;
+      font-weight: 700;
+      padding-bottom: var(--space-3);
+      margin-bottom: var(--space-3);
+      border-bottom: 1px solid var(--card-border);
+    }
+
     .card.small { min-height: 220px; }
 
     /* ---------- Forms ---------- */
@@ -169,14 +218,14 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       background-color: var(--brand-hover) !important;
     }
 
-    /* ---------- Fokus sichtbar (A11y) ---------- */
+    /* ---------- Fokus sichtbar ---------- */
     :is(a, button, [role="button"], input, select, textarea):focus {
       outline: var(--focus) solid var(--brand);
       outline-offset: 2px;
     }
     .sidenav a:focus { background: var(--table-row-hover); }
 
-    /* ---------- Tables: Zebra + Hover + Header ---------- */
+    /* ---------- Tables ---------- */
     .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table.striped { width: 100%; border-collapse: separate; border-spacing: 0; background: transparent; }
     table.striped thead { background: var(--table-head); }
@@ -195,6 +244,7 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       h1 { font-size: 1.6rem; }
       h2 { font-size: 1.35rem; }
       .card .card-content, .card-panel .card-content { padding: var(--space-4); }
+      .card .card-header { padding: var(--space-4) var(--space-4) var(--space-3); }
       table.striped th, table.striped td { padding: 10px 12px; }
     }
 
