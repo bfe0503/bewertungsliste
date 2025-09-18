@@ -1,8 +1,9 @@
 <?php
-$baseUri = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
-$flashes = \App\Core\Flash::consume();
-$isLogged = \App\Core\Auth::check();
+$baseUri   = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+$flashes   = \App\Core\Flash::consume();
+$isLogged  = \App\Core\Auth::check();
 $logoutToken = $isLogged ? \App\Core\Csrf::token('logout') : null;
+$isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; // admin-only nav
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -28,6 +29,13 @@ $logoutToken = $isLogged ? \App\Core\Csrf::token('logout') : null;
       <a href="#" data-target="mobile-nav" class="sidenav-trigger"><i class="material-icons">menu</i></a>
       <ul class="right hide-on-med-and-down">
         <li><a href="<?= $baseUri ?>/lists"><i class="material-icons left">list</i>Listen</a></li>
+
+        <?php if ($isAdmin): ?>
+          <li><a href="<?= $baseUri ?>/admin"><i class="material-icons left">admin_panel_settings</i>Admin</a></li>
+          <li><a href="<?= $baseUri ?>/admin/users"><i class="material-icons left">group</i>Users</a></li>
+          <li><a href="<?= $baseUri ?>/admin/lists"><i class="material-icons left">folder</i>Lists</a></li>
+        <?php endif; ?>
+
         <?php if (!$isLogged): ?>
           <li><a href="<?= $baseUri ?>/login">Anmelden</a></li>
           <li><a class="btn btn-small btn-primary" href="<?= $baseUri ?>/register">Registrieren</a></li>
@@ -45,6 +53,13 @@ $logoutToken = $isLogged ? \App\Core\Csrf::token('logout') : null;
 
   <ul class="sidenav" id="mobile-nav">
     <li><a href="<?= $baseUri ?>/lists"><i class="material-icons left">list</i>Listen</a></li>
+
+    <?php if ($isAdmin): ?>
+      <li><a href="<?= $baseUri ?>/admin"><i class="material-icons left">admin_panel_settings</i>Admin</a></li>
+      <li><a href="<?= $baseUri ?>/admin/users"><i class="material-icons left">group</i>Users</a></li>
+      <li><a href="<?= $baseUri ?>/admin/lists"><i class="material-icons left">folder</i>Lists</a></li>
+    <?php endif; ?>
+
     <?php if (!$isLogged): ?>
       <li><a href="<?= $baseUri ?>/login"><i class="material-icons left">login</i>Anmelden</a></li>
       <li><a href="<?= $baseUri ?>/register"><i class="material-icons left">person_add</i>Registrieren</a></li>

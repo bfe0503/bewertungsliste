@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Flash;
 use App\Core\View;
-use App\Core\Auth;
 use App\Models\User;
 
 final class AuthController
@@ -14,7 +14,7 @@ final class AuthController
     public function showRegister(): void
     {
         $token = Csrf::token('register');
-        View::render('auth/register', ['title' => 'Registrieren', 'csrf' => $token]);
+        View::render('auth/register', ['title' => 'Register', 'csrf' => $token]);
     }
 
     public function register(): void
@@ -28,37 +28,35 @@ final class AuthController
         $username = trim((string)($_POST['username'] ?? ''));
         $password = (string)($_POST['password'] ?? '');
 
-        $errors = [];
-
-        if (!preg_match('/^[a-z0-9_.-]{3,32}$/', $username)) {
-            $errors[] = 'Ungültiger Benutzername (erlaubt a-z, 0-9, _.-, 3–32 Zeichen).';
+        if ($username === '' || mb_strlen($username) < 3 || mb_strlen($username) > 32) {
+            Flash::add('error', 'Username 3–32 Zeichen.');
+            $this->redirect('/register');
+            return;
         }
-        if (strlen($password) < 12) {
-            $errors[] = 'Das Passwort muss mindestens 12 Zeichen lang sein.';
-        }
-        $lower = strtolower($username);
-        if (User::findByUsernameLower($lower)) {
-            $errors[] = 'Benutzername ist bereits vergeben.';
-        }
-
-        if ($errors) {
-            foreach ($errors as $e) {
-                Flash::add('error', $e);
-            }
+        if (mb_strlen($password) < 8) {
+            Flash::add('error', 'Passwort zu kurz (min. 8).');
             $this->redirect('/register');
             return;
         }
 
-        $uid = User::createWithUsername($username, password_hash($password, PASSWORD_ARGON2ID));
+        if (User::findByUsernameLower(mb_strtolower($username))) {
+            Flash::add('error', 'Username bereits vergeben.');
+            $this->redirect('/register');
+            return;
+        }
+
+        $hash = password_hash($password, PASSWORD_ARGON2ID);
+        $uid  = User::create($username, null, $hash); // no email
+
         Auth::login($uid);
-        Flash::add('success', 'Willkommen, ' . htmlspecialchars($username));
-        $this->redirect('/');
+        $_SESSION['is_admin'] = 0;
+        $this->redirect('/'); // Registrierte landen auf der Startseite
     }
 
     public function showLogin(): void
     {
         $token = Csrf::token('login');
-        View::render('auth/login', ['title' => 'Anmelden', 'csrf' => $token]);
+        View::render('auth/login', ['title' => 'Login', 'csrf' => $token]);
     }
 
     public function login(): void
@@ -72,29 +70,38 @@ final class AuthController
         $username = trim((string)($_POST['username'] ?? ''));
         $password = (string)($_POST['password'] ?? '');
 
-        $user = User::findByUsernameLower(strtolower($username));
-        if (!$user || !password_verify($password, $user->password_hash)) {
-            Flash::add('error', 'Anmeldedaten ungültig.');
+        $u = User::findByUsernameLower(mb_strtolower($username));
+        if (!$u || !password_verify($password, (string)$u->password_hash)) {
+            Flash::add('error', 'Ungültige Zugangsdaten.');
             $this->redirect('/login');
             return;
         }
 
-        Auth::login($user->id);
-        Flash::add('success', 'Willkommen zurück, ' . htmlspecialchars($user->username ?? ''));
+        Auth::login((int)$u->id);
+        // Merker für Navigation/Redirect (ohne extra DB-Query)
+        $_SESSION['is_admin'] = (int)($u->is_admin ?? 0);
+
+        // NEU: Admins landen direkt im Admin-Dashboard
+        if ((int)$u->is_admin === 1) {
+            $this->redirect('/admin');
+            return;
+        }
+
+        // Normale Nutzer auf Home
         $this->redirect('/');
     }
 
     public function logout(): void
     {
         Auth::logout();
-        Flash::add('success', 'Abgemeldet.');
+        unset($_SESSION['is_admin']);
         $this->redirect('/');
     }
 
     private function redirect(string $path): void
     {
         $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
-        $loc = $base . $path;
+        $loc  = $base . $path;
         header('Location: ' . ($loc !== '' ? $loc : '/'));
         exit;
     }
