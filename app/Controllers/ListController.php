@@ -13,7 +13,7 @@ use App\Models\Rating;
 
 final class ListController
 {
-    /** Lists overview — now requires authentication */
+    /** Lists overview — requires authentication */
     public function index(): void
     {
         // Require login for any list access
@@ -38,7 +38,7 @@ final class ListController
         ]);
     }
 
-    /** Create a list — unchanged (already required login) */
+    /** Create a list */
     public function create(): void
     {
         if (!Auth::check()) {
@@ -54,10 +54,8 @@ final class ListController
 
         $title = trim((string)($_POST['title'] ?? ''));
         $description = trim((string)($_POST['description'] ?? ''));
-        $visibility = (string)($_POST['visibility'] ?? 'public');
-        if (!in_array($visibility, ['public', 'private'], true)) {
-            $visibility = 'public';
-        }
+        $visibility = (string)($_POST['visibility'] ?? 'public'); // "public"|"private"
+        $isPublic = $visibility === 'private' ? 0 : 1; // default to public
 
         if ($title === '') {
             Flash::add('error', 'Titel ist erforderlich.');
@@ -71,12 +69,12 @@ final class ListController
         }
 
         $uid = (int)Auth::id();
-        $id = UserList::create($uid, $title, $description !== '' ? $description : null, $visibility);
+        $id = UserList::create($uid, $title, $description !== '' ? $description : null, $isPublic);
         Flash::add('success', 'Liste erstellt.');
         $this->redirect('/lists/' . $id);
     }
 
-    /** Show a single list — now requires authentication even for public lists */
+    /** Show a single list — requires authentication even for public lists */
     public function show(array $params): void
     {
         // Require login for viewing any list
@@ -95,15 +93,17 @@ final class ListController
             return;
         }
 
-        // Private lists: only owner may view; public lists: allowed because already logged in
         $uid = (int)Auth::id();
-        if ($list->visibility === 'private' && $list->user_id !== $uid) {
+        $isPublic = (int)($list->is_public ?? 0) === 1;
+
+        // Private lists: only owner may view
+        if (!$isPublic && (int)$list->user_id !== $uid) {
             http_response_code(403);
             View::render('lists/show', ['title' => 'Zugriff verweigert', 'listId' => $id, 'list' => null]);
             return;
         }
 
-        $items = Item::forListWithStats($list->id, $uid);
+        $items = Item::forListWithStats((int)$list->id, $uid);
 
         // CSRF for item creation (form on this page)
         $createItemToken = Csrf::token('create_item_' . $list->id);
@@ -120,13 +120,11 @@ final class ListController
         $commentsByItem = Rating::latestCommentsForItems($itemIds, 3);
 
         // Can user add items? (public lists: any logged-in; private: only owner)
-        $canAdd = $list->visibility === 'public'
-            ? true
-            : ($uid === $list->user_id);
+        $canAdd = $isPublic ? true : ($uid === (int)$list->user_id);
 
         View::render('lists/show', [
-            'title'           => $list->title,
-            'listId'          => $list->id,
+            'title'           => (string)$list->title,
+            'listId'          => (int)$list->id,
             'list'            => $list,
             'items'           => $items,
             'canAdd'          => $canAdd,
