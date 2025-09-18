@@ -40,13 +40,15 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       --badge-public: #26a69a;
       --badge-private: #9e9e9e;
 
+      --danger: #e53935;
+      --danger-hover: #c62828;
+
       --toast-bg: #323232;
       --toast-text: #fff;
 
       --toggle-border: rgba(0,0,0,0.2);
       --chrome-line: rgba(0,0,0,0.08);
 
-      /* Spacing scale */
       --space-1: 6px;
       --space-2: 10px;
       --space-3: 14px;
@@ -73,6 +75,9 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       --badge-public: #2fbba9;
       --badge-private: #6b7280;
 
+      --danger: #ef5350;
+      --danger-hover: #d32f2f;
+
       --toast-bg: #0f1115;
       --toast-text: #e9eef3;
 
@@ -97,10 +102,10 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       border-top: 1px solid var(--chrome-line);
     }
 
-    /* ---------- Container-Breite ---------- */
+    /* Container */
     .container { max-width: 1120px; }
 
-    /* ---------- Typografie ---------- */
+    /* ---------- Typography ---------- */
     h1, .h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 var(--space-4); }
     h2, .h2 { font-size: 1.6rem; line-height: 1.3;  margin: var(--space-4) 0 var(--space-3); }
     h3, .h3 { font-size: 1.35rem; line-height: 1.3; margin: var(--space-3) 0 var(--space-2); }
@@ -108,89 +113,41 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
     .muted { color: var(--muted); }
 
     /* ---------- Cards & Panels ---------- */
-    .card,
-    .card-panel {
+    .card, .card-panel {
       background: var(--card) !important;
       color: var(--text) !important;
       border: 1px solid var(--card-border) !important;
       border-radius: var(--radius);
     }
-    .card .card-content,
-    .card-panel .card-content { padding: var(--space-5); }
+    .card .card-content, .card-panel .card-content { padding: var(--space-5); }
     .card .card-title { color: var(--text) !important; margin: 0; font-weight: 700; }
-
-    /* Card header: consistent title bar with bottom divider */
     .card .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-3);
-      padding: var(--space-5) var(--space-5) var(--space-3);
-      border-bottom: 1px solid var(--card-border);
+      display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+      padding: var(--space-5) var(--space-5) var(--space-3); border-bottom: 1px solid var(--card-border);
     }
-    .card .card-header .title {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-2);
-      min-width: 0; /* for truncation */
-      font-size: 1.15rem;
-      line-height: 1.3;
-      font-weight: 700;
-    }
-    .card .card-header .title .material-icons {
-      font-size: 20px;
-      color: var(--muted);
-    }
-    .card .card-header .title .text {
-      display: inline-block;
-      max-width: 100%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .card .card-header .actions {
-      display: inline-flex;
-      gap: var(--space-2);
-      flex-shrink: 0;
-    }
-    .card .card-header + .card-content {
-      padding-top: var(--space-3);
-    }
-
-    /* Backward-compat: when view still uses .card-title inside .card-content */
-    .card .card-content > .card-title:first-child {
-      display: block;
-      font-size: 1.15rem;
-      font-weight: 700;
-      padding-bottom: var(--space-3);
-      margin-bottom: var(--space-3);
-      border-bottom: 1px solid var(--card-border);
-    }
-
+    .card .card-header .title { display: inline-flex; align-items: center; gap: var(--space-2); min-width: 0; font-size: 1.15rem; font-weight: 700; }
+    .card .card-header .title .material-icons { font-size: 20px; color: var(--muted); }
+    .card .card-header .title .text { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card .card-header .actions { display: inline-flex; gap: var(--space-2); flex-shrink: 0; }
+    .card .card-header + .card-content { padding-top: var(--space-3); }
     .card.small { min-height: 220px; }
+    .card .card-content > .card-title:first-child {
+      display: block; font-size: 1.15rem; font-weight: 700; padding-bottom: var(--space-3); margin-bottom: var(--space-3);
+      border-bottom: 1px solid var(--card-border);
+    }
 
     /* ---------- Forms ---------- */
     .input-field { margin-bottom: var(--space-4); }
-    .input-field input[type="text"],
-    .input-field input[type="password"],
-    .materialize-textarea {
-      color: var(--text) !important;
-      padding-bottom: 6px;
+    .input-field input[type="text"], .input-field input[type="password"], .materialize-textarea {
+      color: var(--text) !important; padding-bottom: 6px;
     }
-    .input-field input::placeholder,
-    .materialize-textarea::placeholder { color: var(--muted) !important; opacity: 1; }
+    .input-field input::placeholder, .materialize-textarea::placeholder { color: var(--muted) !important; opacity: 1; }
     .input-field label { color: var(--muted) !important; }
-    .input-field input:focus + label,
-    .materialize-textarea:focus + label { color: var(--brand) !important; }
-    .input-field input:focus,
-    .materialize-textarea:focus { border-bottom: 1px solid var(--brand) !important; box-shadow: 0 1px 0 0 var(--brand) !important; }
+    .input-field input:focus + label, .materialize-textarea:focus + label { color: var(--brand) !important; }
+    .input-field input:focus, .materialize-textarea:focus { border-bottom: 1px solid var(--brand) !important; box-shadow: 0 1px 0 0 var(--brand) !important; }
 
-    /* Select */
     .select-wrapper input.select-dropdown {
-      color: var(--text) !important;
-      background: transparent !important;
-      border-bottom: 1px solid var(--card-border) !important;
-      padding-bottom: 6px;
+      color: var(--text) !important; background: transparent !important; border-bottom: 1px solid var(--card-border) !important; padding-bottom: 6px;
     }
     .dropdown-content.select-dropdown { background: var(--card) !important; }
     .dropdown-content.select-dropdown li > span { color: var(--text) !important; }
@@ -199,44 +156,63 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
     /* ---------- Buttons ---------- */
     .btn, .btn-small, .btn-large { border-radius: 8px; }
     .btn, .btn-small { height: 36px; line-height: 36px; }
-    .btn-primary {
-      background-color: var(--brand) !important;
-      color: #fff !important;
+    .btn .material-icons, .btn-small .material-icons, .btn-large .material-icons {
+      vertical-align: middle; line-height: inherit; margin-right: 6px;
     }
-    .btn-primary:hover, .btn-primary:focus {
-      background-color: var(--brand-hover) !important;
+    .btn.icon-right .material-icons { margin-left: 6px; margin-right: 0; }
+
+    /* Primary (teal) */
+    .btn-primary { background-color: var(--brand) !important; color: #fff !important; }
+    .btn-primary:hover, .btn-primary:focus { background-color: var(--brand-hover) !important; }
+
+    /* Outline */
+    .btn-outline {
+      background: transparent !important;
+      color: var(--brand) !important;
+      border: 1px solid var(--brand) !important;
+      box-shadow: none !important;
     }
-    .card .btn:not(.red):not(.grey),
-    .card-panel .btn:not(.red):not(.grey) {
-      background-color: var(--brand) !important;
-      color: #fff !important;
-    }
-    .card .btn:not(.red):not(.grey):hover,
-    .card-panel .btn:not(.red):not(.grey):hover,
-    .card .btn:not(.red):not(.grey):focus,
-    .card-panel .btn:not(.red):not(.grey):focus {
-      background-color: var(--brand-hover) !important;
+    .btn-outline:hover, .btn-outline:focus {
+      background: var(--brand) !important; color: #fff !important;
     }
 
-    /* ---------- Fokus sichtbar ---------- */
-    :is(a, button, [role="button"], input, select, textarea):focus {
-      outline: var(--focus) solid var(--brand);
-      outline-offset: 2px;
+    /* Ghost (neutral) */
+    .btn-ghost {
+      background: transparent !important; color: var(--text) !important; border: 1px solid transparent !important;
     }
-    .sidenav a:focus { background: var(--table-row-hover); }
+    .btn-ghost:hover, .btn-ghost:focus {
+      background: var(--table-row-hover) !important;
+    }
+
+    /* Danger */
+    .btn-danger, .btn.red {
+      background-color: var(--danger) !important; color: #fff !important;
+    }
+    .btn-danger:hover, .btn.red:hover, .btn-danger:focus, .btn.red:focus {
+      background-color: var(--danger-hover) !important;
+    }
+
+    /* Disabled + loading */
+    .btn:disabled, .btn.disabled {
+      opacity: .55 !important; cursor: not-allowed !important; filter: grayscale(.2);
+    }
+    .is-loading { position: relative; pointer-events: none; }
+    .is-loading::after {
+      content: ""; position: absolute; right: 10px; top: 50%; width: 14px; height: 14px; margin-top: -7px;
+      border: 2px solid rgba(255,255,255,.6); border-top-color: transparent; border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ---------- Tables ---------- */
     .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table.striped { width: 100%; border-collapse: separate; border-spacing: 0; background: transparent; }
     table.striped thead { background: var(--table-head); }
-    table.striped thead th {
-      color: var(--text); font-weight: 600; border-bottom: 1px solid var(--card-border);
-      padding: 12px 16px;
-    }
-    table.striped tbody tr:nth-child(odd)   { background-color: var(--table-row-odd); }
-    table.striped tbody tr:nth-child(even)  { background-color: var(--table-row-even); }
-    table.striped tbody tr:hover            { background-color: var(--table-row-hover); }
-    table.striped td, table.striped th      { border-bottom: 1px solid var(--card-border); }
+    table.striped thead th { color: var(--text); font-weight: 600; border-bottom: 1px solid var(--card-border); padding: 12px 16px; }
+    table.striped tbody tr:nth-child(odd) { background-color: var(--table-row-odd); }
+    table.striped tbody tr:nth-child(even) { background-color: var(--table-row-even); }
+    table.striped tbody tr:hover { background-color: var(--table-row-hover); }
+    table.striped td, table.striped th { border-bottom: 1px solid var(--card-border); }
     table.striped td { padding: 12px 16px; }
 
     @media (max-width: 600px) {
@@ -249,32 +225,43 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
     }
 
     /* ---------- Badges ---------- */
-    .badge.green { background-color: var(--badge-public) !important; }
-    .badge.grey  { background-color: var(--badge-private) !important; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 2px 10px; border-radius: 999px; font-weight: 600; letter-spacing: .2px;
+      line-height: 20px; height: 22px;
+    }
+    .badge .material-icons { font-size: 16px; line-height: 20px; }
+    /* Mapping existierender Klassen */
+    .badge.green { background-color: var(--badge-public) !important; color: #fff !important; }
+    .badge.grey  { background-color: var(--badge-private) !important; color: #fff !important; }
+
+    /* Neue Badge-Varianten */
+    .badge.outline {
+      background: transparent !important; color: var(--text) !important; border: 1px solid var(--card-border) !important;
+    }
+    .badge.teal   { background: var(--brand) !important; color: #fff !important; }
+    .badge.red    { background: var(--danger) !important; color: #fff !important; }
+    .badge.muted  { background: transparent !important; color: var(--muted) !important; border: 1px solid var(--card-border) !important; }
+
+    /* Größen */
+    .badge.sm { height: 18px; line-height: 18px; padding: 0 8px; font-size: 12px; }
+    .badge.lg { height: 26px; line-height: 26px; padding: 0 12px; font-size: 14px; }
 
     /* ---------- Sidenav ---------- */
-    .sidenav {
-      background: var(--card) !important;
-      color: var(--text) !important;
-    }
+    .sidenav { background: var(--card) !important; color: var(--text) !important; }
     .sidenav a { color: var(--text) !important; }
-    .sidenav .subheader,
-    .sidenav .user-view .name,
-    .sidenav .user-view .email { color: var(--muted) !important; }
+    .sidenav .subheader, .sidenav .user-view .name, .sidenav .user-view .email { color: var(--muted) !important; }
     .sidenav .divider { background-color: var(--card-border) !important; }
     .sidenav .material-icons { color: var(--text) !important; }
 
+    /* ---------- Focus (A11y) ---------- */
+    :is(a, button, [role="button"], input, select, textarea):focus { outline: var(--focus) solid var(--brand); outline-offset: 2px; }
+    .sidenav a:focus { background: var(--table-row-hover); }
+
     /* ---------- Theme toggle ---------- */
     .theme-toggle-btn {
-      border: 1px solid var(--toggle-border);
-      border-radius: 8px;
-      padding: 0 8px;
-      background: transparent;
-      display: inline-flex;
-      align-items: center;
-      height: 32px;
-      line-height: 32px;
-      color: var(--text) !important;
+      border: 1px solid var(--toggle-border); border-radius: 8px; padding: 0 8px; background: transparent;
+      display: inline-flex; align-items: center; height: 32px; line-height: 32px; color: var(--text) !important;
     }
     .theme-toggle-btn i { vertical-align: middle; color: inherit; }
   </style>
@@ -307,7 +294,7 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
           <li>
             <form method="post" action="<?= $baseUri ?>/logout" style="display:inline">
               <input type="hidden" name="csrf" value="<?= htmlspecialchars((string)$logoutToken, ENT_QUOTES, 'UTF-8') ?>">
-              <button class="btn btn-small btn-primary" type="submit">Abmelden</button>
+              <button class="btn btn-small btn-primary" type="submit"><i class="material-icons left">logout</i>Abmelden</button>
             </form>
           </li>
         <?php endif; ?>
@@ -333,7 +320,7 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       <li>
         <form method="post" action="<?= $baseUri ?>/logout" style="padding:12px">
           <input type="hidden" name="csrf" value="<?= htmlspecialchars((string)$logoutToken, ENT_QUOTES, 'UTF-8') ?>">
-          <button class="btn btn-primary" type="submit" style="width:100%">Abmelden</button>
+          <button class="btn btn-primary" type="submit" style="width:100%"><i class="material-icons left">logout</i>Abmelden</button>
         </form>
       </li>
     <?php endif; ?>
