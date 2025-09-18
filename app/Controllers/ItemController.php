@@ -71,7 +71,7 @@ final class ItemController
         $this->redirect('/lists/' . $listId);
     }
 
-    /** Rate an item via JSON (AJAX) */
+    /** Rate an item via JSON (AJAX). Supports optional "comment" and "clearComment". */
     public function rate(array $params): void
     {
         header('Content-Type: application/json; charset=utf-8');
@@ -97,8 +97,19 @@ final class ItemController
             return;
         }
 
-        $score = isset($data['score']) ? (int)$data['score'] : 0;
-        $csrf  = isset($data['csrf'])  ? (string)$data['csrf']  : '';
+        $score        = isset($data['score']) ? (int)$data['score'] : 0;
+        $csrf         = isset($data['csrf']) ? (string)$data['csrf'] : '';
+        $commentInput = array_key_exists('comment', $data) ? $data['comment'] : null; // detect presence
+        $clearComment = isset($data['clearComment']) ? (bool)$data['clearComment'] : false;
+
+        $comment = null;
+        if ($commentInput !== null) {
+            $comment = trim((string)$commentInput);
+            if ($comment === '') {
+                // empty string means "no change" unless clearComment is true
+                $comment = null;
+            }
+        }
 
         if (!Csrf::validate('rate_' . $itemId, $csrf)) {
             http_response_code(403);
@@ -110,9 +121,13 @@ final class ItemController
             echo json_encode(['ok' => false, 'message' => 'Score muss 1–5 sein.']);
             return;
         }
+        if (!$clearComment && $comment !== null && mb_strlen($comment) > 2000) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'message' => 'Kommentar ist zu lang (max. 2000 Zeichen).']);
+            return;
+        }
 
-        // Store/update rating (Ratings table uses column name `rating`)
-        Rating::upsertScore($itemId, (int)Auth::id(), $score);
+        Rating::upsertWithPolicy($itemId, (int)Auth::id(), $score, $comment, $clearComment);
         $stats = Rating::stats($itemId);
 
         // Issue a fresh CSRF token so the client can rate again without reload.
