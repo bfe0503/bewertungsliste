@@ -55,3 +55,13 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 Links:
 - [Releases](../../releases)
 - [Vergleiche/PRs](../../pulls)
+## [v0.5] — 2025-09-18
+### Added
+- **Login-Pflicht für alle Listen**: `/lists` und `/lists/{id}` sind nur noch für angemeldete Nutzer sichtbar. Gäste werden nach `/login` umgeleitet.
+
+### Fixed
+- **Login-Formular**: fehlendes `csrf`-Hidden-Feld ergänzt (verhinderte Logins durch CSRF-Fehler).
+
+### Improved
+- **Dark Mode Formulare**: verlässlich dunkle Eingabefelder (auch bei Browser-Autofill), gut lesbare Text- & Caret-Farben.
+- **Form-Layout**: Labels als Block mit einheitlichem Abstand → symmetrische, ruhigere Karten.
