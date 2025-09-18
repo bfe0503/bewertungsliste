@@ -32,7 +32,7 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       --brand: #00796b;
       --brand-hover: #00695c;
 
-      --table-head: #edf2f7;           /* Header-Hintergrund (Light) */
+      --table-head: #edf2f7;
       --table-row-odd: rgba(0,0,0,0.02);
       --table-row-even: transparent;
       --table-row-hover: rgba(0,0,0,0.05);
@@ -45,6 +45,15 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
 
       --toggle-border: rgba(0,0,0,0.2);
       --chrome-line: rgba(0,0,0,0.08);
+
+      /* Spacing scale */
+      --space-1: 6px;
+      --space-2: 10px;
+      --space-3: 14px;
+      --space-4: 18px;
+      --space-5: 24px;
+      --radius: 10px;
+      --focus: 2px;
     }
     .theme-dark {
       --bg: #0f1115;
@@ -56,7 +65,7 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       --brand: #129383;
       --brand-hover: #0f7d70;
 
-      --table-head: #0f1a22;           /* kontrastreicher Header (Dark) */
+      --table-head: #0f1a22;
       --table-row-odd: rgba(255,255,255,0.03);
       --table-row-even: transparent;
       --table-row-hover: rgba(255,255,255,0.07);
@@ -73,7 +82,7 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
 
     /* ---------- Chrome ---------- */
     html, body { background: var(--bg); color: var(--text); }
-    main { min-height: 70vh; }
+    main { min-height: 70vh; padding-top: var(--space-5); padding-bottom: var(--space-5); }
     .brand-logo { font-weight: 600; color: var(--text) !important; }
 
     nav.teal {
@@ -88,23 +97,36 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       border-top: 1px solid var(--chrome-line);
     }
 
+    /* ---------- Container-Breite leicht erhöhen ---------- */
+    .container { max-width: 1120px; }
+
+    /* ---------- Typografie ---------- */
+    h1, .h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 var(--space-4); }
+    h2, .h2 { font-size: 1.6rem; line-height: 1.3;  margin: var(--space-4) 0 var(--space-3); }
+    h3, .h3 { font-size: 1.35rem; line-height: 1.3; margin: var(--space-3) 0 var(--space-2); }
+    p { margin: 0 0 var(--space-3); color: var(--text); }
+    .muted { color: var(--muted); }
+
     /* ---------- Cards & Panels ---------- */
     .card,
     .card-panel {
       background: var(--card) !important;
       color: var(--text) !important;
       border: 1px solid var(--card-border) !important;
-      border-radius: 10px;
+      border-radius: var(--radius);
     }
     .card .card-content,
-    .card-panel .card-content,
-    .card .card-title { color: var(--text) !important; }
+    .card-panel .card-content { padding: var(--space-5); }
+    .card .card-title { color: var(--text) !important; margin-bottom: var(--space-3); font-weight: 600; }
+    .card.small { min-height: 220px; }
 
     /* ---------- Forms ---------- */
+    .input-field { margin-bottom: var(--space-4); }
     .input-field input[type="text"],
     .input-field input[type="password"],
     .materialize-textarea {
       color: var(--text) !important;
+      padding-bottom: 6px;
     }
     .input-field input::placeholder,
     .materialize-textarea::placeholder { color: var(--muted) !important; opacity: 1; }
@@ -114,17 +136,20 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
     .input-field input:focus,
     .materialize-textarea:focus { border-bottom: 1px solid var(--brand) !important; box-shadow: 0 1px 0 0 var(--brand) !important; }
 
-    /* Materialize Select */
+    /* Select */
     .select-wrapper input.select-dropdown {
       color: var(--text) !important;
       background: transparent !important;
       border-bottom: 1px solid var(--card-border) !important;
+      padding-bottom: 6px;
     }
     .dropdown-content.select-dropdown { background: var(--card) !important; }
     .dropdown-content.select-dropdown li > span { color: var(--text) !important; }
     .dropdown-content.select-dropdown li.active > span { color: #fff !important; background: var(--brand) !important; }
 
     /* ---------- Buttons ---------- */
+    .btn, .btn-small, .btn-large { border-radius: 8px; }
+    .btn, .btn-small { height: 36px; line-height: 36px; }
     .btn-primary {
       background-color: var(--brand) !important;
       color: #fff !important;
@@ -144,43 +169,33 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       background-color: var(--brand-hover) !important;
     }
 
-    /* ---------- Tables: Zebra + Hover + Header-Kontrast ---------- */
-    table.striped {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      background: transparent;
+    /* ---------- Fokus sichtbar (A11y) ---------- */
+    :is(a, button, [role="button"], input, select, textarea):focus {
+      outline: var(--focus) solid var(--brand);
+      outline-offset: 2px;
     }
-    table.striped thead {
-      background: var(--table-head);
-    }
-    table.striped thead th {
-      color: var(--text);
-      font-weight: 600;
-      border-bottom: 1px solid var(--card-border);
-    }
-    table.striped tbody tr:nth-child(odd) {
-      background-color: var(--table-row-odd);
-    }
-    table.striped tbody tr:nth-child(even) {
-      background-color: var(--table-row-even);
-    }
-    table.striped tbody tr:hover {
-      background-color: var(--table-row-hover);
-    }
-    table.striped td, table.striped th {
-      border-bottom: 1px solid var(--card-border);
-    }
+    .sidenav a:focus { background: var(--table-row-hover); }
 
-    /* Mobile: etwas kompakter & horizontales Scrollen erlauben, falls nötig */
-    .table-responsive {
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+    /* ---------- Tables: Zebra + Hover + Header ---------- */
+    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table.striped { width: 100%; border-collapse: separate; border-spacing: 0; background: transparent; }
+    table.striped thead { background: var(--table-head); }
+    table.striped thead th {
+      color: var(--text); font-weight: 600; border-bottom: 1px solid var(--card-border);
+      padding: 12px 16px;
     }
+    table.striped tbody tr:nth-child(odd)   { background-color: var(--table-row-odd); }
+    table.striped tbody tr:nth-child(even)  { background-color: var(--table-row-even); }
+    table.striped tbody tr:hover            { background-color: var(--table-row-hover); }
+    table.striped td, table.striped th      { border-bottom: 1px solid var(--card-border); }
+    table.striped td { padding: 12px 16px; }
+
     @media (max-width: 600px) {
+      main { padding-top: var(--space-4); padding-bottom: var(--space-4); }
+      h1 { font-size: 1.6rem; }
+      h2 { font-size: 1.35rem; }
+      .card .card-content, .card-panel .card-content { padding: var(--space-4); }
       table.striped th, table.striped td { padding: 10px 12px; }
-      table.striped { font-size: 14px; }
     }
 
     /* ---------- Badges ---------- */
@@ -198,10 +213,6 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
     .sidenav .user-view .email { color: var(--muted) !important; }
     .sidenav .divider { background-color: var(--card-border) !important; }
     .sidenav .material-icons { color: var(--text) !important; }
-
-    /* ---------- Spacing ---------- */
-    .section { margin-top: 18px; }
-    .card.small { min-height: 220px; }
 
     /* ---------- Theme toggle ---------- */
     .theme-toggle-btn {
