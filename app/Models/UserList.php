@@ -6,6 +6,12 @@ namespace App\Models;
 use App\Core\Db;
 use PDO;
 
+/**
+ * Lists model aligned with DB schema:
+ * - columns: id, user_id, title, description, is_public, created_at
+ * - joins users to expose owner_username where needed
+ * PHP 8.2.12
+ */
 final class UserList
 {
     public int $id;
@@ -13,6 +19,7 @@ final class UserList
     public string $title;
     public ?string $description = null;
     public int $is_public;
+    public ?string $owner_username = null;
 
     /** Create a new list and return its ID */
     public static function create(int $userId, string $title, ?string $description, int $isPublic = 1): int
@@ -24,53 +31,78 @@ final class UserList
         return (int)Db::pdo()->lastInsertId();
     }
 
-    /** Admin overview */
+    /** Admin overview (with owner username) */
     public static function all(): array
     {
-        $q = Db::pdo()->query('SELECT id, title, user_id FROM lists ORDER BY id ASC');
-        $rows = $q->fetchAll(PDO::FETCH_ASSOC);
+        $sql = 'SELECT l.id, l.title, l.user_id, u.username AS owner_username
+                FROM lists l
+                JOIN users u ON u.id = l.user_id
+                ORDER BY l.id ASC';
+        $rows = Db::pdo()->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+
         return array_map(static function(array $r): array {
             return [
-                'id'       => (int)$r['id'],
-                'title'    => (string)$r['title'],
-                'user_id'  => (int)$r['user_id'],
+                'id'              => (int)$r['id'],
+                'title'           => (string)$r['title'],
+                'user_id'         => (int)$r['user_id'],
+                'owner_username'  => (string)$r['owner_username'],
             ];
         }, $rows);
     }
 
-    /** Lists owned by a specific user (for dashboard) */
+    /** Lists owned by a specific user (dashboard) */
     public static function allByUser(int $userId): array
     {
-        $stmt = Db::pdo()->prepare('SELECT id, title, user_id, is_public, created_at FROM lists WHERE user_id = ? ORDER BY id DESC');
+        $stmt = Db::pdo()->prepare(
+            'SELECT id, title, user_id, description, is_public, created_at
+             FROM lists
+             WHERE user_id = ?
+             ORDER BY id DESC'
+        );
         $stmt->execute([$userId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /** Public lists (for homepage) */
+    /** Public lists for homepage (with owner username) */
     public static function allPublic(int $limit = 30): array
     {
         $limit = max(1, min($limit, 200));
-        $stmt = Db::pdo()->prepare('SELECT id, title, user_id, is_public, created_at FROM lists WHERE is_public = 1 ORDER BY id DESC LIMIT ?');
+        $stmt = Db::pdo()->prepare(
+            'SELECT l.id, l.title, l.user_id, l.description, l.is_public, l.created_at,
+                    u.username AS owner_username
+             FROM lists l
+             JOIN users u ON u.id = l.user_id
+             WHERE l.is_public = 1
+             ORDER BY l.id DESC
+             LIMIT ?'
+        );
         $stmt->bindValue(1, $limit, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /** Find a list by id (rich) */
+    /** Find a list by id (rich, with owner username) */
     public static function findById(int $id): ?self
     {
-        $stmt = Db::pdo()->prepare('SELECT id, user_id, title, description, is_public FROM lists WHERE id = ?');
+        $stmt = Db::pdo()->prepare(
+            'SELECT l.id, l.user_id, l.title, l.description, l.is_public,
+                    u.username AS owner_username
+             FROM lists l
+             JOIN users u ON u.id = l.user_id
+             WHERE l.id = ?'
+        );
         $stmt->execute([$id]);
         $r = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$r) {
             return null;
         }
         $l = new self();
-        $l->id         = (int)$r['id'];
-        $l->user_id    = (int)$r['user_id'];
-        $l->title      = (string)$r['title'];
-        $l->description= $r['description'] !== null ? (string)$r['description'] : null;
-        $l->is_public  = (int)$r['is_public'];
+        $l->id              = (int)$r['id'];
+        $l->user_id         = (int)$r['user_id'];
+        $l->title           = (string)$r['title'];
+        $l->description     = $r['description'] !== null ? (string)$r['description'] : null;
+        $l->is_public       = (int)$r['is_public'];
+        $l->owner_username  = $r['owner_username'] !== null ? (string)$r['owner_username'] : null;
         return $l;
     }
 
