@@ -65,3 +65,8 @@ Links:
 ### Improved
 - **Dark Mode Formulare**: verlässlich dunkle Eingabefelder (auch bei Browser-Autofill), gut lesbare Text- & Caret-Farben.
 - **Form-Layout**: Labels als Block mit einheitlichem Abstand → symmetrische, ruhigere Karten.
+
+## [v0.5.1] — 2025-09-18
+### Fixed
+- Bewertungs-/Listenansicht: Zugriff auf nicht existente Property `visibility` durch `is_public` (0/1) ersetzt.
+- Warnungen `Undefined property: ... $visibility` beseitigt.
