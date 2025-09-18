@@ -32,7 +32,10 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       --brand: #00796b;
       --brand-hover: #00695c;
 
-      --table-head: #edf2f7;
+      --table-head: #edf2f7;           /* Header-Hintergrund (Light) */
+      --table-row-odd: rgba(0,0,0,0.02);
+      --table-row-even: transparent;
+      --table-row-hover: rgba(0,0,0,0.05);
 
       --badge-public: #26a69a;
       --badge-private: #9e9e9e;
@@ -53,7 +56,10 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       --brand: #129383;
       --brand-hover: #0f7d70;
 
-      --table-head: #12212b;
+      --table-head: #0f1a22;           /* kontrastreicher Header (Dark) */
+      --table-row-odd: rgba(255,255,255,0.03);
+      --table-row-even: transparent;
+      --table-row-hover: rgba(255,255,255,0.07);
 
       --badge-public: #2fbba9;
       --badge-private: #6b7280;
@@ -94,7 +100,7 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
     .card-panel .card-content,
     .card .card-title { color: var(--text) !important; }
 
-    /* ---------- Forms (Inputs / Labels / Placeholders / Select) ---------- */
+    /* ---------- Forms ---------- */
     .input-field input[type="text"],
     .input-field input[type="password"],
     .materialize-textarea {
@@ -138,16 +144,50 @@ $isAdmin   = !empty($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1; 
       background-color: var(--brand-hover) !important;
     }
 
-    /* ---------- Tables ---------- */
-    table.striped thead { background: var(--table-head); }
-    table.striped thead th { color: var(--text); }
-    table.striped tr { border-bottom-color: var(--card-border); }
+    /* ---------- Tables: Zebra + Hover + Header-Kontrast ---------- */
+    table.striped {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: transparent;
+    }
+    table.striped thead {
+      background: var(--table-head);
+    }
+    table.striped thead th {
+      color: var(--text);
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+    }
+    table.striped tbody tr:nth-child(odd) {
+      background-color: var(--table-row-odd);
+    }
+    table.striped tbody tr:nth-child(even) {
+      background-color: var(--table-row-even);
+    }
+    table.striped tbody tr:hover {
+      background-color: var(--table-row-hover);
+    }
+    table.striped td, table.striped th {
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    /* Mobile: etwas kompakter & horizontales Scrollen erlauben, falls nötig */
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    @media (max-width: 600px) {
+      table.striped th, table.striped td { padding: 10px 12px; }
+      table.striped { font-size: 14px; }
+    }
 
     /* ---------- Badges ---------- */
     .badge.green { background-color: var(--badge-public) !important; }
     .badge.grey  { background-color: var(--badge-private) !important; }
 
-    /* ---------- Sidenav (Burger-Menü) ---------- */
+    /* ---------- Sidenav ---------- */
     .sidenav {
       background: var(--card) !important;
       color: var(--text) !important;
