@@ -2,7 +2,7 @@
 /**
  * Variables passed in:
  * @var array<int, mixed> $own     // own lists (array rows or objects)
- * @var array<int, mixed> $public  // public lists (array rows or objects)
+ * @var array<int, mixed> $public  // public lists (array rows or objects, includes owner_username)
  * @var string $csrf               // CSRF for create_list
  * @var bool $isLogged
  */
@@ -74,13 +74,18 @@ $visText = static function($row) use ($F): string {
           $title = (string)($F($row, 'title', '') ?? '');
           $desc  = (string)($F($row, 'description', '') ?? '');
           $vis   = $visText($row);
+          $owner = (string)($F($row, 'owner_username', '') ?? '');
+          if ($owner === '') { $owner = 'you'; }
         ?>
         <div class="col s12 m6 l4">
           <div class="card small">
             <div class="card-content">
               <span class="card-title"><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span>
+              <p style="margin-top:4px;">
+                <small>Owner: <strong><?= htmlspecialchars($owner, ENT_QUOTES, 'UTF-8') ?></strong></small>
+              </p>
               <?php if ($desc !== ''): ?>
-                <p><?= htmlspecialchars($desc, ENT_QUOTES, 'UTF-8') ?></p>
+                <p style="margin-top:6px;"><?= htmlspecialchars($desc, ENT_QUOTES, 'UTF-8') ?></p>
               <?php endif; ?>
               <p style="margin-top:8px;">Visibility: <strong><?= htmlspecialchars($vis, ENT_QUOTES, 'UTF-8') ?></strong></p>
             </div>
@@ -107,13 +112,17 @@ $visText = static function($row) use ($F): string {
           $title = (string)($F($row, 'title', '') ?? '');
           $desc  = (string)($F($row, 'description', '') ?? '');
           $vis   = $visText($row);
+          $owner = (string)($F($row, 'owner_username', '') ?? '');
         ?>
         <div class="col s12 m6 l4">
           <div class="card small">
             <div class="card-content">
               <span class="card-title"><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span>
+              <p style="margin-top:4px;">
+                <small>Owner: <strong><?= htmlspecialchars($owner, ENT_QUOTES, 'UTF-8') ?></strong></small>
+              </p>
               <?php if ($desc !== ''): ?>
-                <p><?= htmlspecialchars($desc, ENT_QUOTES, 'UTF-8') ?></p>
+                <p style="margin-top:6px;"><?= htmlspecialchars($desc, ENT_QUOTES, 'UTF-8') ?></p>
               <?php endif; ?>
               <p style="margin-top:8px;">Visibility: <strong><?= htmlspecialchars($vis, ENT_QUOTES, 'UTF-8') ?></strong></p>
             </div>

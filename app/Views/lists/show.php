@@ -9,10 +9,6 @@
  * @var array<int,string> $rateTokens
  * @var array<int, array<int, array{ user:?string, comment:?string, created_at:string }>> $commentsByItem
  * @var int|null $currentUserId
- *
- * Notes:
- * - We treat "description" from items array as legacy field; we no longer ask for URL here.
- * - Rating is handled via AJAX to /items/{id}/rate with JSON: {score, csrf, comment?, clearComment?}
  */
 use App\Core\Csrf;
 
@@ -30,6 +26,10 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
 
 <div class="section">
   <h4><?= htmlspecialchars($list->title, ENT_QUOTES, 'UTF-8') ?></h4>
+
+  <?php if (!empty($list->owner_username)): ?>
+    <p><small>Owner: <strong><?= htmlspecialchars($list->owner_username, ENT_QUOTES, 'UTF-8') ?></strong></small></p>
+  <?php endif; ?>
 
   <?php if ($list->description !== null && $list->description !== ''): ?>
     <p><?= htmlspecialchars($list->description, ENT_QUOTES, 'UTF-8') ?></p>
@@ -86,7 +86,6 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
           <td><span id="cnt-<?= $iid ?>"><?= $cnt ?></span></td>
           <td>
             <div class="rating" data-item="<?= $iid ?>" data-csrf="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
-              <!-- Stars (1..5) -->
               <span class="stars" data-current="<?= $my ?>">
                 <?php for ($s = 1; $s <= 5; $s++): ?>
                   <i class="star" data-score="<?= $s ?>" style="cursor:pointer;">★</i>
@@ -94,7 +93,6 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
               </span>
               <small style="margin-left:6px;">Deine Bewertung: <span id="mine-<?= $iid ?>"><?= $my > 0 ? $my : '–' ?></span></small>
 
-              <!-- Comment box -->
               <div class="input-field" style="margin-top:8px;">
                 <textarea id="cmt-<?= $iid ?>" class="materialize-textarea" maxlength="2000" placeholder="Kommentar (optional)"></textarea>
                 <label for="cmt-<?= $iid ?>" class="active">Kommentar (optional)</label>
@@ -137,28 +135,12 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
 </div>
 
 <style>
-/* Minimal star styling (no external libs) */
-.stars .star {
-  font-style: normal;
-  font-size: 18px;
-  opacity: 0.35;
-  padding: 0 2px;
-}
-.stars .star.active {
-  opacity: 1;
-}
+.stars .star { font-style: normal; font-size: 18px; opacity: 0.35; padding: 0 2px; }
+.stars .star.active { opacity: 1; }
 </style>
 
 <script>
-/**
- * Minimal rating client:
- * - Click stars to set score (1..5)
- * - Click "Speichern" to POST JSON to /items/{id}/rate
- * - Updates avg/count/my score and replaces CSRF token from server
- * - If "Kommentar entfernen" is checked, sets clearComment = true and ignores textarea
- */
 (function() {
-  // Initialize stars with current selection
   document.querySelectorAll('.rating .stars').forEach(function(starWrap) {
     var current = parseInt(starWrap.getAttribute('data-current') || '0', 10);
     setStarVisual(starWrap, current);
@@ -172,7 +154,6 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
     starWrap.setAttribute('data-current', String(n));
   }
 
-  // Click on star -> set selected value
   document.querySelectorAll('.rating .star').forEach(function(el) {
     el.addEventListener('click', function(ev) {
       var star = ev.currentTarget;
@@ -182,7 +163,6 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
     });
   });
 
-  // Save button -> AJAX POST
   document.querySelectorAll('.rating .rate-btn').forEach(function(btn) {
     btn.addEventListener('click', async function(ev) {
       var itemId = parseInt(btn.getAttribute('data-item') || '0', 10);
@@ -198,15 +178,8 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
       var clear = document.getElementById('clr-' + itemId).checked;
       var comment = document.getElementById('cmt-' + itemId).value;
 
-      // If clearComment checked, ignore comment content
-      var payload = {
-        score: score,
-        csrf: csrf,
-        clearComment: !!clear
-      };
-      if (!clear) {
-        payload.comment = comment;
-      }
+      var payload = { score: score, csrf: csrf, clearComment: !!clear };
+      if (!clear) { payload.comment = comment; }
 
       try {
         var res = await fetch('<?= $base ?>/items/' + itemId + '/rate', {
@@ -218,28 +191,17 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
         var data = await res.json();
 
         if (data && data.ok) {
-          // Update UI from server response
           if (typeof data.avg !== 'undefined')  avgEl.textContent = Number(data.avg).toFixed(2).replace('.', ',');
           if (typeof data.count !== 'undefined') cntEl.textContent = String(data.count);
           if (typeof data.score !== 'undefined') mine.textContent = String(data.score);
-
-          // Replace CSRF for next rating cycle
-          if (data.next_csrf) {
-            ratingRoot.setAttribute('data-csrf', data.next_csrf);
-          }
-
-          // Reset clear checkbox (optional)
+          if (data.next_csrf) ratingRoot.setAttribute('data-csrf', data.next_csrf);
           document.getElementById('clr-' + itemId).checked = false;
-
-          msg.textContent = data.message || 'Gespeichert.';
-          msg.style.color = '#2e7d32';
+          msg.textContent = data.message || 'Gespeichert.'; msg.style.color = '#2e7d32';
         } else {
-          msg.textContent = (data && data.message) ? data.message : 'Fehler.';
-          msg.style.color = '#c62828';
+          msg.textContent = (data && data.message) ? data.message : 'Fehler.'; msg.style.color = '#c62828';
         }
       } catch (e) {
-        msg.textContent = 'Netzwerk-/Serverfehler.';
-        msg.style.color = '#c62828';
+        msg.textContent = 'Netzwerk-/Serverfehler.'; msg.style.color = '#c62828';
       }
     });
   });
