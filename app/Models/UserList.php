@@ -40,7 +40,7 @@ final class UserList
         return $row ? self::fromRow($row) : null;
     }
 
-    /** All public lists (with owner info joinable in views if needed) */
+    /** All public lists (for logged-in users) */
     public static function allPublic(int $limit = 30): array
     {
         $stmt = Db::pdo()->prepare('
@@ -56,7 +56,7 @@ final class UserList
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /** All lists by user */
+    /** All lists by a given user (owner) */
     public static function allByUser(int $userId): array
     {
         $stmt = Db::pdo()->prepare('
@@ -70,7 +70,19 @@ final class UserList
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /** Update list */
+    /** NEW: All lists (admin overview) */
+    public static function all(): array
+    {
+        $stmt = Db::pdo()->query('
+            SELECT l.*, u.username AS owner_username
+            FROM lists l
+            JOIN users u ON u.id = l.user_id
+            ORDER BY l.id DESC
+        ');
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** Update list fields */
     public static function update(int $id, string $title, ?string $description, int $isPublic): void
     {
         $stmt = Db::pdo()->prepare('
@@ -88,7 +100,7 @@ final class UserList
         ]);
     }
 
-    /** Delete list; items/ratings are removed via FK ON DELETE CASCADE */
+    /** Delete list; items/ratings removed via FK ON DELETE CASCADE */
     public static function deleteCascade(int $id): void
     {
         $stmt = Db::pdo()->prepare('DELETE FROM lists WHERE id = ?');
