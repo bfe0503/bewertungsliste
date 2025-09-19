@@ -13,19 +13,17 @@ use App\Models\Rating;
 
 final class ListController
 {
-    /** Lists overview — requires authentication */
     public function index(): void
     {
-        // Require login for any list access
         if (!Auth::check()) {
             Flash::add('error', 'Bitte melde dich an, um Listen zu sehen.');
             $this->redirect('/login');
             return;
         }
 
-        $uid = (int)Auth::id();
-        $own = UserList::allByUser($uid);
-        $public = UserList::allPublic(30); // still loaded, but only for logged-in users
+        $uid    = (int)Auth::id();
+        $own    = UserList::allByUser($uid);
+        $public = UserList::allPublic(30);
 
         $token = Csrf::token('create_list');
 
@@ -38,7 +36,6 @@ final class ListController
         ]);
     }
 
-    /** Create a list */
     public function create(): void
     {
         if (!Auth::check()) {
@@ -52,10 +49,10 @@ final class ListController
             return;
         }
 
-        $title = trim((string)($_POST['title'] ?? ''));
+        $title       = trim((string)($_POST['title'] ?? ''));
         $description = trim((string)($_POST['description'] ?? ''));
-        $visibility = (string)($_POST['visibility'] ?? 'public'); // "public"|"private"
-        $isPublic = $visibility === 'private' ? 0 : 1; // default to public
+        $visibility  = (string)($_POST['visibility'] ?? 'public');
+        $isPublic    = $visibility === 'private' ? 0 : 1;
 
         if ($title === '') {
             Flash::add('error', 'Titel ist erforderlich.');
@@ -69,22 +66,20 @@ final class ListController
         }
 
         $uid = (int)Auth::id();
-        $id = UserList::create($uid, $title, $description !== '' ? $description : null, $isPublic);
+        $id  = UserList::create($uid, $title, $description !== '' ? $description : null, $isPublic);
         Flash::add('success', 'Liste erstellt.');
         $this->redirect('/lists/' . $id);
     }
 
-    /** Show a single list — requires authentication even for public lists */
     public function show(array $params): void
     {
-        // Require login for viewing any list
         if (!Auth::check()) {
             Flash::add('error', 'Bitte melde dich an, um Listen zu sehen.');
             $this->redirect('/login');
             return;
         }
 
-        $id = isset($params['id']) ? (int)$params['id'] : 0;
+        $id   = isset($params['id']) ? (int)$params['id'] : 0;
         $list = $id > 0 ? UserList::find($id) : null;
 
         if (!$list) {
@@ -93,10 +88,9 @@ final class ListController
             return;
         }
 
-        $uid = (int)Auth::id();
+        $uid      = (int)Auth::id();
         $isPublic = (int)($list->is_public ?? 0) === 1;
 
-        // Private lists: only owner may view
         if (!$isPublic && (int)$list->user_id !== $uid) {
             http_response_code(403);
             View::render('lists/show', ['title' => 'Zugriff verweigert', 'listId' => $id, 'list' => null]);
@@ -105,21 +99,17 @@ final class ListController
 
         $items = Item::forListWithStats((int)$list->id, $uid);
 
-        // CSRF for item creation (form on this page)
         $createItemToken = Csrf::token('create_item_' . $list->id);
 
-        // Per-item CSRF for rating (for AJAX)
         $rateTokens = [];
-        $itemIds = [];
+        $itemIds    = [];
         foreach ($items as $it) {
             $rateTokens[$it['id']] = Csrf::token('rate_' . $it['id']);
-            $itemIds[] = (int)$it['id'];
+            $itemIds[]             = (int)$it['id'];
         }
 
-        // Latest comments per item (up to 3) incl. user_id for own-comment detection
         $commentsByItem = Rating::latestCommentsForItems($itemIds, 3);
 
-        // Can user add items? (public lists: any logged-in; private: only owner)
         $canAdd = $isPublic ? true : ($uid === (int)$list->user_id);
 
         View::render('lists/show', [
@@ -135,10 +125,104 @@ final class ListController
         ]);
     }
 
+    public function edit(array $params): void
+    {
+        $uid = Auth::id();
+        if ($uid === null) {
+            Flash::add('error', 'Bitte anmelden.');
+            $this->redirect('/login');
+            return;
+        }
+        $id   = (int)($params['id'] ?? 0);
+        $list = UserList::find($id);
+        if (!$list || (int)$list->user_id !== (int)$uid) {
+            Flash::add('error', 'Nicht berechtigt.');
+            $this->redirect('/lists');
+            return;
+        }
+        $updateCsrf = Csrf::token('list_update_' . $id);
+        $deleteCsrf = Csrf::token('list_delete_' . $id);
+
+        View::render('lists/edit', [
+            'title'      => 'Liste bearbeiten',
+            'list'       => $list,
+            'csrf'       => $updateCsrf,
+            'deleteCsrf' => $deleteCsrf,
+        ]);
+    }
+
+    public function update(array $params): void
+    {
+        $uid = Auth::id();
+        if ($uid === null) {
+            Flash::add('error', 'Bitte anmelden.');
+            $this->redirect('/login');
+            return;
+        }
+        $id = (int)($params['id'] ?? 0);
+        if (!Csrf::validate('list_update_' . $id, $_POST['csrf'] ?? '')) {
+            Flash::add('error', 'Ungültiges CSRF-Token.');
+            $this->redirect('/lists/' . $id . '/edit');
+            return;
+        }
+        $list = UserList::find($id);
+        if (!$list || (int)$list->user_id !== (int)$uid) {
+            Flash::add('error', 'Nicht berechtigt.');
+            $this->redirect('/lists');
+            return;
+        }
+
+        $title       = trim((string)($_POST['title'] ?? ''));
+        $description = trim((string)($_POST['description'] ?? ''));
+        $visibility  = (string)($_POST['visibility'] ?? 'public');
+        $isPublic    = $visibility === 'private' ? 0 : 1;
+
+        if ($title === '') {
+            Flash::add('error', 'Titel ist erforderlich.');
+            $this->redirect('/lists/' . $id . '/edit');
+            return;
+        }
+        if (mb_strlen($title) > 150) {
+            Flash::add('error', 'Titel ist zu lang (max. 150).');
+            $this->redirect('/lists/' . $id . '/edit');
+            return;
+        }
+
+        UserList::update($id, $title, $description !== '' ? $description : null, $isPublic);
+        Flash::add('success', 'Liste aktualisiert.');
+        $this->redirect('/lists/' . $id);
+    }
+
+    public function delete(array $params): void
+    {
+        $uid = Auth::id();
+        if ($uid === null) {
+            Flash::add('error', 'Bitte anmelden.');
+            $this->redirect('/login');
+            return;
+        }
+        $id = (int)($params['id'] ?? 0);
+        if (!Csrf::validate('list_delete_' . $id, $_POST['csrf'] ?? '')) {
+            Flash::add('error', 'Ungültiges CSRF-Token.');
+            $this->redirect('/lists');
+            return;
+        }
+        $list = UserList::find($id);
+        if (!$list || (int)$list->user_id !== (int)$uid) {
+            Flash::add('error', 'Nicht berechtigt.');
+            $this->redirect('/lists');
+            return;
+        }
+
+        UserList::deleteCascade($id);
+        Flash::add('success', 'Liste gelöscht.');
+        $this->redirect('/lists');
+    }
+
     private function redirect(string $path): void
     {
         $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
-        $loc = $base . $path;
+        $loc  = $base . $path;
         header('Location: ' . ($loc !== '' ? $loc : '/'));
         exit;
     }
